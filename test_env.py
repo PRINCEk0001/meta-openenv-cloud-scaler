@@ -79,7 +79,7 @@ check(isinstance(s_info, dict),
       "step info is dict")
 
 # 1e — required info keys
-for key in ("is_success", "latency"):
+for key in ("is_success", "latency_ms", "active_servers", "step_count"):
     check(key in s_info,
           f"info contains '{key}'", f"keys present: {list(s_info.keys())}")
 
@@ -123,7 +123,7 @@ for i in range(1000):
         continue
 
     # guard: servers in bounds
-    srv = info2.get("servers", -1)
+    srv = info2.get("active_servers", -1)
     if not (MIN_SERVERS <= srv <= MAX_SERVERS):
         phase2_errors.append(f"step {i}: servers={srv} out of [{MIN_SERVERS},{MAX_SERVERS}]")
 
@@ -162,7 +162,7 @@ def forced_scenario(servers_init: int, action: int, task="autoscaling_easy") -> 
     for _ in range(5):
         _, r, _, _, inf = e.step(action)
         rewards.append(r)
-        latencies.append(inf["latency"])
+        latencies.append(inf["latency_ms"])
     return sum(rewards)/len(rewards), sum(latencies)/len(latencies)
 
 # Scenario A — safely over-provisioned (30 servers → capacity 750 req/s).
@@ -250,8 +250,8 @@ check("latency" in doc.lower() and "cost" in doc.lower(),
 # 4e — is_success and latency in info
 check("is_success" in info4,
       "reset() info contains 'is_success'")
-check("latency" in info4,
-      "reset() info contains 'latency'")
+check("latency_ms" in info4,
+      "reset() info contains 'latency_ms'")
 
 print(f"\n{'✅ Phase 4 Passed: Submission checklist cleared.' if not errors else '❌ Some checklist items need attention.'}")
 
