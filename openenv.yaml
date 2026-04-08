@@ -1,0 +1,63 @@
+name: cloud-autoscaler-env
+version: "1.0.0"
+description: "RL environment for cloud infrastructure auto-scaling optimization"
+entry_point: inference.py
+tasks:
+  - autoscaling_easy
+  - autoscaling_medium
+  - autoscaling_hard
+
+environment:
+  server_port: 7860
+  protocol: http+websocket
+
+  episode:
+    max_steps: 50
+    initial_servers: 10
+
+  action_space:
+    type: discrete
+    values:
+      0: "do nothing"
+      1: "add one server"
+      2: "remove one server"
+
+  observation_space:
+    current_traffic_load:
+      type: float
+      range: [0, infinity]
+      description: "Current request rate (req/s)"
+    active_servers:
+      type: int
+      range: [1, 50]
+    latency_ms:
+      type: float
+      range: [0, infinity]
+    step_number:
+      type: int
+      range: [0, 49]
+    total_capacity:
+      type: float
+    utilization:
+      type: float
+      range: [0, 2.0]
+
+  reward:
+    range: [0.0, 1.0]
+    components:
+      - name: normalized_score
+        value: "[0.0, 1.0]"
+        condition: always
+
+endpoints:
+  health: GET  /health
+  info:   GET  /info
+  reset:  POST /reset
+  step:   POST /step
+  stream: WS   /ws
+
+tags:
+  - cloud
+  - autoscaling
+  - reinforcement-learning
+  - resource-management
