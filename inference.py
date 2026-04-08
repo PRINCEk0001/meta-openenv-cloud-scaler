@@ -12,7 +12,7 @@ from models import ScalerAction
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME   = os.getenv("MODEL_NAME", "gpt-4.1-mini")
 HF_TOKEN = os.getenv("HF_TOKEN")
-HF_SPACE_URL = os.getenv("HF_SPACE_URL", "https://YOUR-USERNAME-cloud-autoscaler-env.hf.space")
+HF_SPACE_URL = os.getenv("HF_SPACE_URL", "http://localhost:7860")
 
 if not HF_TOKEN:
     raise ValueError("HF_TOKEN environment variable is required")
