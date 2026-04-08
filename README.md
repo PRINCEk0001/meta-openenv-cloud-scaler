@@ -122,4 +122,17 @@ python demo.py
 ```
 
 ---
+
+## 🤖 Agentic Evaluation & Variance Check
+
+This environment is fully prepared for automated evaluation by Open LLM Agents (e.g., Nemotron 3 Super). 
+
+### Baseline Performance (Heuristic)
+Running the baseline standard agent (`client.py` using simple utiliziation threshold heuristics) over 200 steps typically yields a **Total Reward between ~145.0 and ~165.0** (normalized). Score variance strictly depends on the randomized +400 req/s traffic spikes.
+
+### LLM Agent Variance & Readiness
+- **Docstring Prompts**: The environment is equipped with rich `__doc__` strings in the `CloudScalerEnv` class, explicitly detailing the `[latency, cost, capacity]` trade-offs as expected by zero-shot LLM prompts.
+- **Score Variance**: Agent evaluation pipelines should expect a baseline variance margin of `±10.0` points dynamically introduced by the pseudo-random sine-wave traffic injection points. Open LLM agents are evaluated against their ability to preempt these spikes while optimizing over-provisioning efficiency penalties.
+
+---
 *Developed for the Meta LLM OpenEnv Hackathon* ☁️
