@@ -69,15 +69,17 @@ python client.py --mode http --host http://localhost:7860 --steps 50
 
 ## Simulation Details
 
-- **Episode length:** 50 steps
+- **Episode length:** 200 steps
 - **Start state:** 10 servers sitting around ~250 req/s load.
 - **Server limit:** Each server caps at exactly 25 requests per second.
 - **Traffic:** Oscillating mostly between 250 and 750, with random 400 req/s spikes hitting roughly 20% of the time every 5th step.
 
-### Rewards
-- **Performance:** +1.0 for latency < 50ms.
-- **Cost:** -0.04 continually deducted for every active server.
-- **Outage limit:** -10.0 penalty if latency shoots past 500ms.
+### Rewards (normalized to [-1.0, +1.0])
+- **Healthy:** +1.0 for latency < 50ms (minus efficiency penalty)
+- **Degraded:** +0.6 for latency < 150ms
+- **Bad:** +0.3 for latency < 500ms
+- **Outage:** -1.0 penalty if latency >= 500ms
+- **Over-provisioning:** up to -0.2 deducted based on server count
 
 ### Latency Modeling
 - **< 70% load:** 20-40ms (Optimal)
