@@ -118,22 +118,19 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
         # Perf is 0 or 1.
         # Penalty for servers is up to 0.5.
         
-        # NEW REWARD FUNCTION [0.0 - 1.0]:
-        # 1.0 base for good latency, 0.5 base for degraded latency, 0.0 for crash
+        # NEW REWARD FUNCTION [-1.0, 1.0] to match cloud_scaler_env.py
         if latency > 500.0:
-            base_score = 0.0
-        elif latency > 150.0:
-            base_score = 0.3
-        elif latency > 50.0:
+            return -1.0 # critical outage
+
+        if latency < 50.0:
+            base_score = 1.0
+        elif latency < 150.0:
             base_score = 0.6
         else:
-            base_score = 1.0
+            base_score = 0.3
             
-        # Deduct a small fraction based on overprovisioning so lean fleets score higher.
-        # Using 50 servers costs max 0.2 off the base score.
         efficiency_penalty = (servers / MAX_SERVERS) * 0.2
-        
-        final_score = max(0.0, base_score - efficiency_penalty)
+        final_score = max(-1.0, base_score - efficiency_penalty)
         return final_score
 
     def reset(self, task_name: str = "autoscaling_easy") -> ScalerObservation:
@@ -213,6 +210,10 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
 
         info = {
             "error": None,
+            "is_success": bool(latency < 50.0),
+            "latency_ms": float(latency),
+            "active_servers": int(self._active_servers),
+            "step_count": int(self._step_count),
             "episode_id": self._state.episode_id,
             "total_reward": round(self._state.total_reward, 2),
             "avg_latency": round(self._state.avg_latency, 2),
