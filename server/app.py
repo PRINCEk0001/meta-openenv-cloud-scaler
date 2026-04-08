@@ -51,6 +51,19 @@ app.add_middleware(
 )
 
 
+@app.get("/")
+async def root():
+    return {
+        "name": "cloud-autoscaler-env",
+        "version": "1.0.0",
+        "status": "healthy",
+        "docs": "/docs",
+        "health": "/health",
+        "reset": "POST /reset",
+        "step": "POST /step",
+    }
+
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "environment": "cloud-autoscaler"}
