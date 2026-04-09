@@ -3,8 +3,12 @@ server/tasks.py — Logic for grading task performance in the Cloud AutoScaler e
 Ensures all scores are strictly within (0.001, 0.999).
 """
 
+import math
+
 def normalize_score(raw_score: float) -> float:
-    """Clamp score to strictly between 0 and 1, avoiding boundaries."""
+    """Clamp score to strictly between 0 and 1, avoiding boundaries and NaN/Inf."""
+    if raw_score is None or math.isnan(raw_score) or math.isinf(raw_score):
+        return 0.1
     return float(round(max(0.001, min(0.999, raw_score)), 4))
 
 def _calculate_score_logic(state) -> float:

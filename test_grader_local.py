@@ -2,14 +2,26 @@ import requests
 import json
 import time
 
-def test_grader():
+def test_endpoints():
     base_url = "http://localhost:7860"
     
+    print("Testing /health endpoint...")
+    resp = requests.get(f"{base_url}/health")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "healthy"
+    print("  [OK]")
+
+    print("Testing /info endpoint...")
+    resp = requests.get(f"{base_url}/info")
+    assert resp.status_code == 200
+    info = resp.json()
+    assert info["name"] == "cloud-autoscaler-env"
+    assert info["reward_range"] == [0.0, 1.0]
+    print("  [OK]")
+
     print("Testing /grader endpoint...")
-    
     # 1. Reset env
     requests.post(f"{base_url}/reset", json={"task": "autoscaling_easy"})
-    
     # 2. Query grader (should be low/baseline initially)
     resp = requests.post(f"{base_url}/grader", json={"task": "autoscaling_easy"})
     data = resp.json()
@@ -34,4 +46,4 @@ def test_grader():
     print("\n[OK] /grader endpoint verification PASSED")
 
 if __name__ == "__main__":
-    test_grader()
+    test_endpoints()

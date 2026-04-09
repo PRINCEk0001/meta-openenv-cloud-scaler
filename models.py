@@ -61,7 +61,7 @@ class EnvInfo(BaseModel):
         "utilization": "float",
     }
     max_steps: int = 50
-    reward_range: tuple = (0.001, 0.999)
+    reward_range: tuple = (0.0, 1.0)
     openenv_core_available: bool = _OPENENV_AVAILABLE
 
 class GraderRequest(BaseModel):

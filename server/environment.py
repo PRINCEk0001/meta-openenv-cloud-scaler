@@ -73,7 +73,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
         if step % 5 == 0 and random.random() < spike_prob:
             spike = random.uniform(spike_min, spike_max)
 
-        return max(0.0, base + spike)
+        return float(max(0.0, min(1000.0, base + spike)))
 
     def _calculate_latency(self, traffic: float, servers: int) -> float:
         if servers == 0:
@@ -91,7 +91,8 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             return 200.0 + ((utilization - 0.9) / 0.1) * 200.0
         
         # overloaded
-        return min(1000.0, 600.0 + ((utilization - 1.0) / 0.5) * 400.0)
+        raw = 600.0 + ((utilization - 1.0) / 0.5) * 400.0
+        return float(max(0.0, min(2000.0, raw)))
 
     def _calculate_reward(self, latency: float, servers: int) -> float:
         # Calculate a step score strictly in the open interval (0, 1).
@@ -122,6 +123,8 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
         raw = base_score - efficiency_penalty
+        if math.isnan(raw) or math.isinf(raw):
+            raw = 0.02
 
         # Hard clamp to strictly open (0, 1) — guards against any float edge cases
         final_score = max(0.001, min(0.999, raw))
