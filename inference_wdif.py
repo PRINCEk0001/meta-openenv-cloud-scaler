@@ -13,7 +13,7 @@ Stdout format:
     [END]     success=<bool> steps=<n> reward=<float>             (per episode)
     [END]     score=<float>                                        (final overall)
 
-All reward and score values are strictly in (0.10, 0.90).
+All reward and score values are strictly in (0.001, 0.999).
 """
 
 import asyncio
@@ -211,7 +211,7 @@ async def run_episode(
                 print(f"[STEP] step={step} action={action.action_type} reward=0.10 done=true error={e}", flush=True)
                 break
             obs    = result.observation
-            reward = round(max(0.10, min(0.90, result.reward or 0.10)), 2)
+            reward = round(max(0.001, min(0.999, result.reward or 0.001)), 3)
             done   = result.done
 
             if action.action_type in ("inspect_logs", "inspect_config", "inspect_gradients"):
@@ -238,7 +238,7 @@ async def run_episode(
                 break
 
         # WebSocket is closed — safe to call the judge now
-        keyword_score = max(0.10, min(0.90, rewards[-1])) if rewards else 0.10
+        keyword_score = max(0.001, min(0.999, rewards[-1])) if rewards else 0.001
         judge_score: float | None = None
         if submit_action is not None:
             judge_score = llm_judge(
@@ -251,15 +251,15 @@ async def run_episode(
                 inspection_order=inspection_order,
             )
         if judge_score is None:
-            score = round(max(0.10, min(0.90, keyword_score)), 2)
+            score = round(max(0.001, min(0.999, keyword_score)), 3)
         else:
-            score = round(max(0.10, min(0.90, 0.85 * keyword_score + 0.15 * judge_score)), 2)
+            score = round(max(0.001, min(0.999, 0.85 * keyword_score + 0.15 * judge_score)), 3)
 
         success = score >= SUCCESS_THRESHOLD
 
     finally:
         steps_taken = len(rewards)
-        final_reward = rewards[-1] if rewards else 0.10
+        final_reward = rewards[-1] if rewards else 0.001
         # [END] per-episode: reward=<float> (singular, as per spec)
         print(
             f"[END] success={str(success).lower()} steps={steps_taken} reward={final_reward:.2f}",
@@ -308,8 +308,8 @@ async def main() -> None:
         scores += await run_task("task_hard",   HARD_SCENARIOS,   env, client)
 
         # [END] final overall score — singular, per spec
-        overall = round(max(0.10, min(0.90, sum(scores) / len(scores))), 2) if scores else 0.10
-        print(f"[END] score={overall:.2f}", flush=True)
+        overall = round(max(0.001, min(0.999, sum(scores) / len(scores))), 3) if scores else 0.001
+        print(f"[END] score={overall:.3f}", flush=True)
     finally:
         try:
             await env.close()

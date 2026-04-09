@@ -30,8 +30,8 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
             "epochs": list(range(1, 31)),
             "train_loss": [round(2.3 - i * 0.07, 3) for i in range(30)],
             "val_loss":   [round(2.3 - i * 0.02 + max(0, (i - 8) * 0.06), 3) for i in range(30)],
-            "train_acc":  [round(min(0.99, 0.10 + i * 0.03), 2) for i in range(30)],
-            "val_acc":    [round(max(0.54, 0.10 + i * 0.015 - max(0, (i - 8) * 0.012)), 2) for i in range(30)],
+            "train_acc":  [round(min(0.999, 0.10 + i * 0.03), 3) for i in range(30)],
+            "val_acc":    [round(max(0.54, 0.10 + i * 0.015 - max(0, (i - 8) * 0.012)), 3) for i in range(30)],
         },
         "config": {
             "model": "CNN-5layer",
@@ -123,8 +123,8 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
             "epochs": list(range(1, 51)),
             "train_loss": [round(max(0.05, 4.6 - i * 0.09), 3) for i in range(50)],
             "val_loss":   [round(4.6 - i * 0.05 + max(0, (i - 20) * 0.04), 3) for i in range(50)],
-            "train_acc":  [round(min(0.98, 0.01 + i * 0.02), 2) for i in range(50)],
-            "val_acc":    [round(max(0.35, 0.01 + i * 0.015 - max(0, (i - 20) * 0.008)), 2) for i in range(50)],
+            "train_acc":  [round(min(0.999, 0.001 + i * 0.02), 3) for i in range(50)],
+            "val_acc":    [round(max(0.35, 0.001 + i * 0.015 - max(0, (i - 20) * 0.008)), 3) for i in range(50)],
         },
         "config": {
             "model": "ResNet-18",

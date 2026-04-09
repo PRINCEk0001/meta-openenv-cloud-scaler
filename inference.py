@@ -122,7 +122,7 @@ def run_task(env, task_name: str):
                 reward = float(res.reward)
                 done = res.done
             except Exception as ex:
-                reward = 0.01 # Use 0.01 to stay in (0,1)
+                reward = 0.001 # Use 0.001 to stay in (0,1)
                 done = True
                 err = str(ex).replace("\n", " ")
 

@@ -123,12 +123,16 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
         raw = base_score - efficiency_penalty
-        if math.isnan(raw) or math.isinf(raw):
-            raw = 0.02
 
-        # Ultra-strict clamp, updated to [0.001, 0.999]
         score = max(0.001, min(0.999, float(raw)))
-        return float(round(score, 3))
+        score = round(score, 3)
+
+        if score >= 1.0:
+            score = 0.999
+        if score <= 0.0:
+            score = 0.001
+
+        return float(score)
 
     def reset(self, task_name: str = "autoscaling_easy") -> ScalerObservation:
         self._task_name = task_name

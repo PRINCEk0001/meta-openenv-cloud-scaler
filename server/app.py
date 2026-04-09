@@ -134,6 +134,11 @@ async def grader(req: GraderRequest):
         score = max(0.001, min(0.999, score))
         score = round(score, 3)
             
+        if score >= 1.0:
+            score = 0.999
+        if score <= 0.0:
+            score = 0.001
+
         is_success = bool(score >= 0.5)
         log.info(f"Grading ({req.task}) -> Raw={raw_score:.4f}, Final={score:.2f}, success={is_success}")
         return GraderResponse(task=req.task, score=score, is_success=is_success)

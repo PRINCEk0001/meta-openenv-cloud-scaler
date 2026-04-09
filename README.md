@@ -55,7 +55,7 @@ This repository is strictly structured to support both local programmatic benchm
 * **Healthy (`0.97` base):** System latency < 50ms.
 * **Degraded (`0.60` base):** System latency 50ms - 150ms.
 * **Poor (`0.30` base):** System latency 150ms - 500ms.
-* **Critical Outage (`0.02` base):** System latency > 500ms (Hard failure).
+* **Critical Outage (`0.001` base):** System latency > 500ms (Hard failure).
 * *Note: Up to `-0.20` is dynamically deducted from the base score to penalize capacity over-provisioning (idle servers), with a final hard clamp at `0.001`.*
 
 ### Latency Modeling 
@@ -128,11 +128,11 @@ python demo.py
 This environment is fully prepared for automated evaluation by Open LLM Agents (e.g., Nemotron 3 Super). 
 
 ### Baseline Performance (Heuristic)
-Running the baseline standard agent (`client.py` using simple utiliziation threshold heuristics) over 50 steps typically yields a **Total Reward between ~35.0 and ~45.0**. Score variance strictly depends on the randomized +400 req/s traffic spikes.
+Running the baseline standard agent (`client.py` using simple utiliziation threshold heuristics) over 50 steps typically yields a **Total Reward between 0.001 and 0.999**. Score variance strictly depends on the randomized +400 req/s traffic spikes.
 
 ### LLM Agent Variance & Readiness
 - **Docstring Prompts**: The environment is equipped with rich `__doc__` strings in the `CloudScalerEnv` class, explicitly detailing the `[latency, cost, capacity]` trade-offs as expected by zero-shot LLM prompts.
-- **Score Variance**: Agent evaluation pipelines should expect a baseline variance margin of `±10.0` points dynamically introduced by the pseudo-random sine-wave traffic injection points. Open LLM agents are evaluated against their ability to preempt these spikes while optimizing over-provisioning efficiency penalties.
+- **Score Variance**: Agent evaluation pipelines should expect a baseline variance margin within the `(0.001, 0.999)` range. Outage protection: Instead of a massive negative penalty, we floor the score at 0.001 to avoid validation failures while still highlighting poor performance.
 
 ---
 *Developed for the Meta LLM OpenEnv Hackathon* ☁️

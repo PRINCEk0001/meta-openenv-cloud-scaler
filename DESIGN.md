@@ -17,7 +17,7 @@ I wanted to build an objective that actually mimics modern SLA constraints while
 - You get ~0.97 for keeping latency sub-50ms (Optimal).
 - You get ~0.60 for sub-150ms and ~0.30 for sub-500ms.
 - Efficiency penalty: Up to -0.20 based on server count to penalize over-provisioning.
-- Outage protection: Instead of a massive negative penalty, we floor the score at 0.02 to avoid validation failures while still highlighting poor performance.
+- Outage protection: Instead of a massive negative penalty, we floor the score at 0.001 to avoid validation failures while still highlighting poor performance.
 
 The agent maximizes its return by finding the minimum server count that keeps latency within the high-reward window (<50ms).
 

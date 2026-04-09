@@ -34,7 +34,7 @@ def test_graders():
     # Expected: 0.62 + 0.10 = 0.72
     score = grade_code_review_trajectory([0.7, 0.7, 0.7, 0.7, 0.3], "medium")
     print(f"  Test Partial (Med): Expected 0.72, Got {score}")
-    assert abs(score - 0.72) < 0.01
+    assert abs(score - 0.72) < 0.001
 
     print("\n[SUCCESS] All Code Review trajectory tests passed!")
 
