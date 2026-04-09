@@ -1,9 +1,9 @@
 """
-Pydantic schemas for the Cloud AutoScaler env.
+Pydantic schemas for the Cloud AutoScaler env AND the WhyDidItFail env.
 Falls back to base pydantic models if openenv-core isn't installed yet.
 """
 
-from typing import Literal
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 try:
@@ -71,3 +71,43 @@ class GraderResponse(BaseModel):
     task: str
     score: float
     is_success: bool
+
+
+# ── WhyDidItFail env models ───────────────────────────────────────────────────
+
+class WhyDidItFailAction(BaseModel):
+    """
+    Action submitted by the agent inside a WhyDidItFail episode.
+
+    action_type options:
+        "inspect_logs"       — examine training loss / accuracy curves
+        "inspect_config"     — examine hyperparameter config
+        "inspect_gradients"  — examine gradient norm statistics
+        "submit_diagnosis"   — submit final diagnosis (ends episode)
+
+    The three diagnosis fields are only required when action_type == "submit_diagnosis".
+    """
+    action_type: Literal[
+        "inspect_logs",
+        "inspect_config",
+        "inspect_gradients",
+        "submit_diagnosis",
+    ]
+    diagnosis:     Optional[str] = None
+    suggested_fix: Optional[str] = None
+    reasoning:     Optional[str] = None
+
+
+class WhyDidItFailObservation(BaseModel):
+    """Observation returned after each step in a WhyDidItFail episode."""
+    task_description: str
+    feedback:         str
+    visible_data:     Optional[dict] = None
+
+
+class WhyDidItFailStepResult(BaseModel):
+    """Full step result returned by the WhyDidItFail server."""
+    observation: WhyDidItFailObservation
+    reward:      float
+    done:        bool
+    info:        dict = Field(default_factory=dict)

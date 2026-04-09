@@ -113,7 +113,7 @@ async def grader(req: GraderRequest):
     try:
         if _env_instance is None or _env_instance._state is None:
             log.warning(f"Grader called for {req.task} but no environment state is available.")
-            return GraderResponse(task=req.task, score=0.001, is_success=False)
+            return GraderResponse(task=req.task, score=0.10, is_success=False)
         
         score = grade_task(req.task, _env_instance._state)
         
@@ -126,7 +126,7 @@ async def grader(req: GraderRequest):
         
     except Exception as e:
         log.error(f"Critical error during grading of {req.task}: {e}")
-        return GraderResponse(task=req.task, score=0.001, is_success=False)
+        return GraderResponse(task=req.task, score=0.10, is_success=False)
 
 
 
