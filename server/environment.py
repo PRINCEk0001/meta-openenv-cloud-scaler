@@ -107,8 +107,8 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
 
         if latency >= 500.0:
             # Critical outage — very low score but strictly > 0
-            base_score = 0.02
-            efficiency_penalty = 0.0
+            base_score = 0.05
+            efficiency_penalty = 0.01
         elif latency < 50.0:
             # Excellent performance
             base_score = 0.97
@@ -126,9 +126,9 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
         if math.isnan(raw) or math.isinf(raw):
             raw = 0.02
 
-        # Hard clamp to strictly open (0, 1) — guards against any float edge cases
-        final_score = max(0.001, min(0.999, raw))
-        return float(round(final_score, 4))
+        # Hard clamp to strictly open (0.01, 0.99)
+        final_score = max(0.01, min(0.99, raw))
+        return float(round(final_score, 3))
 
     def reset(self, task_name: str = "autoscaling_easy") -> ScalerObservation:
         self._task_name = task_name
@@ -147,7 +147,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
         self._state = ScalerState(
             episode_id=f"ep_{random.randint(1000, 9999)}",
             step_count=0,
-            total_reward=0.0,
+            total_reward=0.1,
             peak_traffic=traffic,
             avg_latency=latency,
         )
@@ -212,12 +212,12 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             "active_servers": int(self._active_servers),
             "step_count": int(self._step_count),
             "episode_id": self._state.episode_id,
-            "total_raw_reward": round(self._state.total_reward, 2),
+            "total_raw_reward": round(self._state.total_reward, 3),
             "avg_latency": round(self._state.avg_latency, 2),
             "peak_traffic": round(self._state.peak_traffic, 2),
         }
 
-        return obs, round(reward, 4), self._done, info
+        return obs, round(reward, 3), self._done, info
 
     @property
     def current_step(self) -> int:

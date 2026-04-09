@@ -16,7 +16,7 @@ def test_endpoints():
     assert resp.status_code == 200
     info = resp.json()
     assert info["name"] == "cloud-autoscaler-env"
-    assert info["reward_range"] == [0.0, 1.0]
+    assert info["reward_range"] == [0.01, 0.99]
     print("  [OK]")
 
     print("Testing /grader endpoint...")

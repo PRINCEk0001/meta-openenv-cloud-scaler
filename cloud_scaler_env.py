@@ -59,7 +59,7 @@ class CloudScalerEnv(gym.Env):
     """
 
     metadata = {"render_modes": []}
-    reward_range = (0.0, 1.0)
+    reward_range = (0.01, 0.99)
 
     def __init__(self, task: str = "autoscaling_easy", render_mode=None):
         super().__init__()
@@ -77,7 +77,7 @@ class CloudScalerEnv(gym.Env):
         # Internal state ─────────────────────────────────────────────────────
         self._active_servers = MIN_SERVERS
         self._step_count     = 0
-        self._total_reward   = 0.0
+        self._total_reward   = 0.1
         self._done           = False
 
     # ── Private helpers ───────────────────────────────────────────────────────
@@ -133,8 +133,8 @@ class CloudScalerEnv(gym.Env):
         Hard clamp: max(0.01, min(0.99, raw))
         """
         if latency >= 500.0:
-            base = 0.02                                 # critical outage
-            efficiency_penalty = 0.0                    # don't penalize cost during outage
+            base = 0.05                                 # critical outage
+            efficiency_penalty = 0.01                    # don't penalize cost during outage
         elif latency < 50.0:
             base = 0.97                                 # excellent
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
@@ -146,8 +146,8 @@ class CloudScalerEnv(gym.Env):
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
         raw = base - efficiency_penalty
-        # Hard clamp: guarantee strictly open (0, 1)
-        return float(round(max(0.001, min(0.999, raw)), 4))
+        # Hard clamp: guarantee strictly open (0.01, 0.99)
+        return float(round(max(0.01, min(0.99, raw)), 3))
 
     def _make_obs(self, traffic: float, latency: float) -> np.ndarray:
         """Pack state into a float32 numpy array matching observation_space."""
@@ -171,7 +171,7 @@ class CloudScalerEnv(gym.Env):
 
         self._active_servers = 10           # sensible warm-start
         self._step_count     = 0
-        self._total_reward   = 0.0
+        self._total_reward   = 0.1
         self._done           = False
 
         traffic = self._generate_traffic(0)
@@ -186,7 +186,7 @@ class CloudScalerEnv(gym.Env):
             "step_count"     : 0,
             # ── Extra context ────────────────────────────────────────────
             "traffic"        : float(traffic),
-            "total_reward"   : 0.0,
+            "total_reward"   : 0.1,
         }
         return obs, info
 
@@ -196,7 +196,7 @@ class CloudScalerEnv(gym.Env):
 
         Parameters
         ----------
-        action : int  — 0 (hold), 1 (add server), 2 (remove server)
+        action : int  - 0 (hold), 1 (add server), 2 (remove server)
 
         Returns
         -------

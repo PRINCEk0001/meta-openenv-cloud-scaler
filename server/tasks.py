@@ -6,15 +6,16 @@ Ensures all scores are strictly within (0.001, 0.999).
 import math
 
 def normalize_score(raw_score: float) -> float:
-    """Clamp score to strictly between 0 and 1, avoiding boundaries and NaN/Inf."""
+    """Clamp score strictly between 0.01 and 0.99, avoiding boundaries."""
     if raw_score is None or math.isnan(raw_score) or math.isinf(raw_score):
         return 0.1
-    return float(round(max(0.001, min(0.999, raw_score)), 4))
+    # Use 0.01 and 0.99 as hard floor/ceiling
+    return float(round(max(0.01, min(0.99, raw_score)), 3))
 
 def _calculate_score_logic(state) -> float:
     """Internal shared logic for scoring based on latency and efficiency."""
     if not state:
-        return 0.001
+        return 0.1
 
     # 1. Latency Component (Scale: 0.05 to 0.7)
     if state.avg_latency < 50.0:

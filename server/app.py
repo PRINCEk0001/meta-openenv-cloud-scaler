@@ -117,8 +117,8 @@ async def grader(req: GraderRequest):
         
         score = grade_task(req.task, _env_instance._state)
         
-        # Hard safety clamp to ensure output is strictly within (0.001, 0.999)
-        score = float(round(max(0.001, min(0.999, score)), 4))
+        # Hard safety clamp to ensure output is strictly within (0.01, 0.99)
+        score = float(round(max(0.01, min(0.99, score)), 3))
         
         is_success = bool(score >= 0.5)  # >= 0.5 is usually the success threshold
         log.info(f"Grading ({req.task}) -> score={score:.4f}, success={is_success}")
