@@ -22,10 +22,10 @@ def test_graders():
     # Mean: 0.9
     # Consistency Bonus (Easy): +0.05
     # Explanation Bonus: +0.05
-    # Expected: 0.90 + 0.05 + 0.05 = 1.00 -> Clamped to 0.98
+    # Expected: 0.90 + 0.05 + 0.05 = 1.00 -> Clamped to 0.999
     score = grade_code_review_trajectory([0.9, 0.9, 0.9, 0.9, 0.9], "easy")
-    print(f"  Test Perfect (Easy): Expected 0.98, Got {score}")
-    assert score == 0.98
+    print(f"  Test Perfect (Easy): Expected 0.999, Got {score}")
+    assert score == 0.999
     
     # 3. Partial Consistency Test (4/5 steps >= 0.70)
     # Sequence: [0.7, 0.7, 0.7, 0.7, 0.3]

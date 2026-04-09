@@ -126,17 +126,13 @@ def run_task(env, task_name: str):
                 done = True
                 err = str(ex).replace("\n", " ")
 
-            # Ultra-strict (0, 1) clamping and 2-decimal formatting
+            # Ultra-strict (0, 1) clamping using [0.001, 0.999]
             safe_reward = float(reward)
-            safe_reward = max(0.01, min(0.99, safe_reward))
-            safe_reward = round(safe_reward, 2)
-            if safe_reward <= 0.01:
-                safe_reward = 0.02
-            elif safe_reward >= 0.99:
-                safe_reward = 0.98
-                
+            safe_reward = max(0.001, min(0.999, safe_reward))
+            safe_reward = round(safe_reward, 3)
+            
             rewards_float.append(safe_reward)
-            rewards_formatted.append(f"{safe_reward:.2f}")
+            rewards_formatted.append(f"{safe_reward:.3f}")
             
             err_log = err if err else "null"
             done_str = "true" if done else "false"

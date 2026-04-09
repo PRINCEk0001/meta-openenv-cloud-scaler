@@ -59,7 +59,7 @@ class CloudScalerEnv(gym.Env):
     """
 
     metadata = {"render_modes": []}
-    reward_range = (0.01, 0.99)
+    reward_range = (0.001, 0.999)
 
     def __init__(self, task: str = "autoscaling_easy", render_mode=None):
         super().__init__()
@@ -145,15 +145,9 @@ class CloudScalerEnv(gym.Env):
             base = 0.30                                 # bad
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
-        raw = base - efficiency_penalty
-        # Ultra-strict clamp for absolute boundary safety
-        score = max(0.01, min(0.99, float(raw)))
-        score = round(score, 2)
-        if score <= 0.01:
-            score = 0.02
-        elif score >= 0.99:
-            score = 0.98
-        return float(score)
+        # Ultra-strict clamp, now using [0.001, 0.999] range
+        score = max(0.001, min(0.999, float(raw)))
+        return float(round(score, 3))
 
     def _make_obs(self, traffic: float, latency: float) -> np.ndarray:
         """Pack state into a float32 numpy array matching observation_space."""

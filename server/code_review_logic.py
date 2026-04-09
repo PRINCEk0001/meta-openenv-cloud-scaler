@@ -6,14 +6,9 @@ import math
 from typing import List
 
 def clamp_ultra_strict(score: float) -> float:
-    """Implement the [0.02, 0.98] ultra-strict safety clamp."""
-    s = max(0.01, min(0.99, float(score)))
-    s = round(s, 2)
-    if s <= 0.01:
-        s = 0.02
-    elif s >= 0.99:
-        s = 0.98
-    return float(s)
+    """Implement the [0.001, 0.999] ultra-strict safety clamp."""
+    s = max(0.001, min(0.999, float(score)))
+    return float(round(s, 3))
 
 def grade_code_review_trajectory(step_rewards: List[float], difficulty: str) -> float:
     """

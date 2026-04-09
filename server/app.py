@@ -128,14 +128,10 @@ async def grader(req: GraderRequest):
         
         raw_score = grade_task(req.task, _env_instance._state)
         
-        # Ultra-strict clamp as suggested by user
+        # Ultra-strict clamp as suggested by user, now with [0.001, 0.999] bounds
         score = float(raw_score)
-        score = max(0.01, min(0.99, score))
-        score = round(score, 2)
-        if score <= 0.01:
-            score = 0.02
-        elif score >= 0.99:
-            score = 0.98
+        score = max(0.001, min(0.999, score))
+        score = round(score, 3)
             
         is_success = bool(score >= 0.5)
         log.info(f"Grading ({req.task}) -> Raw={raw_score:.4f}, Final={score:.2f}, success={is_success}")
