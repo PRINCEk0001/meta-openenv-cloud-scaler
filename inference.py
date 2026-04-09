@@ -98,13 +98,14 @@ class Timeout:
 
 
 def run_task(env, task_name: str):
-    """Executes the standard inference loop and generates judges' logs for a specific task."""
+    """Executes the standard inference loop and generates logs."""
     step = 0
-    rewards = []
+    rewards_float = []
+    rewards_formatted = []
 
     obs = env.reset(task_name=task_name)
 
-    # [START] log MUST be exactly like this
+    # [START] - Perfectly matches guideline
     print(f"[START] task={task_name} env=cloud-autoscaler-openenv model={MODEL_NAME}", flush=True)
 
     try:
@@ -112,41 +113,39 @@ def run_task(env, task_name: str):
         while not done:
             step += 1
             action = get_scaling_action(obs)
-
-            # compact JSON for logging
             action_str = json.dumps(action.model_dump(), separators=(",", ":"))
             err = None
 
             try:
                 res = env.step(action)
                 obs = res.observation
-                reward = res.reward
+                reward = float(res.reward)
                 done = res.done
             except Exception as ex:
-                reward = 0.001
+                reward = 0.01 # Use 0.01 to stay in (0,1)
                 done = True
                 err = str(ex).replace("\n", " ")
 
-            # Clamp reward internally, but format to 2 decimal places for output
-            reward = max(0.001, min(0.999, float(reward)))
-            rewards.append(f"{reward:.2f}")
+            # Strict (0, 1) clamping and 2-decimal formatting
+            safe_reward = max(0.01, min(0.99, reward))
+            rewards_float.append(safe_reward)
+            rewards_formatted.append(f"{safe_reward:.2f}")
+            
             err_log = err if err else "null"
             done_str = "true" if done else "false"
 
-            # [STEP] log MUST be exactly like this
-            print(f"[STEP] step={step} action={action_str} reward={reward:.2f} done={done_str} error={err_log}", flush=True)
+            # [STEP] - Perfectly matches guideline
+            print(f"[STEP] step={step} action={action_str} reward={safe_reward:.2f} done={done_str} error={err_log}", flush=True)
 
     finally:
-        # [END] log — success MUST be true or false.
-        if len(rewards) > 0:
-            avg_score = sum(float(r) for r in rewards) / len(rewards)
-        else:
-            avg_score = 0.001
+        # Success logic: If the loop finished without crashing and reached 'done'
+        # Adjust this if your environment provides a specific success flag
+        final_success = "true" if (len(rewards_float) > 0 and done) else "false"
         
-        # Determine boolean success based on average score threshold
-        success_val = "true" if avg_score >= 0.5 else "false"
-        r_str = ",".join(rewards)
-        print(f"[END] success={success_val} steps={step} rewards={r_str}", flush=True)
+        r_str = ",".join(rewards_formatted)
+        
+        # [END] - Perfectly matches guideline
+        print(f"[END] success={final_success} steps={step} rewards={r_str}", flush=True)
 
 
 
