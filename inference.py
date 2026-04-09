@@ -101,7 +101,6 @@ def run_task(env, task_name: str):
     """Executes the standard inference loop and generates judges' logs for a specific task."""
     step = 0
     rewards = []
-    success = False
 
     obs = env.reset(task_name=task_name)
 
@@ -128,22 +127,28 @@ def run_task(env, task_name: str):
                 done = True
                 err = str(ex).replace("\n", " ")
 
-            rewards.append(f"{reward:.2f}")
+            # Clamp reward to stay strictly within (0, 1)
+            reward = max(0.01, min(0.99, float(reward)))
+            rewards.append(f"{reward:.4f}")
             err_log = err if err else "null"
             done_str = "true" if done else "false"
 
             # [STEP] log MUST be exactly like this
-            print(f"[STEP] step={step} action={action_str} reward={reward:.2f} done={done_str} error={err_log}", flush=True)
-
-        if len(rewards) > 0:
-            avg = sum(float(r) for r in rewards) / len(rewards)
-            success = avg > 0.0
+            print(f"[STEP] step={step} action={action_str} reward={reward:.4f} done={done_str} error={err_log}", flush=True)
 
     finally:
-        # [END] log MUST be exactly like this
-        succ_str = "true" if success else "false"
+        # [END] log — success MUST be a float strictly in (0, 1), never true/false.
+        # Meta's grader parses this field as the task score; booleans map to 1.0/0.0
+        # which fails the strict-bounds check.
+        if len(rewards) > 0:
+            avg_reward = sum(float(r) for r in rewards) / len(rewards)
+        else:
+            avg_reward = 0.01
+        
+        # Hard clamp for the final task score
+        task_score = max(0.01, min(0.99, round(avg_reward, 4)))
         r_str = ",".join(rewards)
-        print(f"[END] success={succ_str} steps={step} rewards={r_str}", flush=True)
+        print(f"[END] success={task_score:.4f} steps={step} rewards={r_str}", flush=True)
 
 
 if __name__ == "__main__":
