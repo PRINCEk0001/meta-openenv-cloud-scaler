@@ -59,6 +59,7 @@ class CloudScalerEnv(gym.Env):
     """
 
     metadata = {"render_modes": []}
+    reward_range = (0.01, 0.99)
 
     def __init__(self, task: str = "autoscaling_easy", render_mode=None):
         super().__init__()
