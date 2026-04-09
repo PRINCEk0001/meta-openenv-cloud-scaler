@@ -17,8 +17,8 @@ import uvicorn
 from pydantic import BaseModel
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from models import EnvInfo, ResetResult, ScalerAction, ScalerObservation, StepResult, GraderRequest, GraderResponse
-from server.environment import CloudAutoScalerEnvironment
+from models import EnvInfo, ResetResult, ScalerAction, ScalerObservation, StepResult, GraderRequest, GraderResponse, CodeReviewAction, CodeReviewObservation
+from server.environment import CloudAutoScalerEnvironment, CodeReviewEnvironment
 from server.tasks import grade_task
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -82,28 +82,39 @@ class ResetRequest(BaseModel):
 @app.post("/reset", response_model=ResetResult)
 async def reset(req: ResetRequest = None):
     global _env_instance
-    if _env_instance is None:
-        _env_instance = CloudAutoScalerEnvironment()
-        
     task_name = req.task if req else "autoscaling_easy"
+    
+    # Environment Factory
+    if "code_review" in task_name.lower() or "codereview" in task_name.lower():
+        if not isinstance(_env_instance, CodeReviewEnvironment):
+            _env_instance = CodeReviewEnvironment()
+    else:
+        if not isinstance(_env_instance, CloudAutoScalerEnvironment):
+            _env_instance = CloudAutoScalerEnvironment()
+            
     obs = _env_instance.reset(task_name=task_name)
-    ep_id = _env_instance._state.episode_id if _env_instance._state else "unknown"
-    log.info(f"Resetting ({task_name}) -> servers={obs.active_servers}, traffic={obs.current_traffic_load:.0f}")
+    ep_id = getattr(_env_instance._state, "episode_id", "unknown")
+    
+    # Logging based on env type
+    if isinstance(obs, CodeReviewObservation):
+        log.info(f"Resetting CodeReview ({task_name}) -> step={obs.step_number}")
+    else:
+        log.info(f"Resetting CloudScaler ({task_name}) -> servers={obs.active_servers}")
+        
     return ResetResult(observation=obs, info={"episode_id": ep_id})
 
 
 @app.post("/step", response_model=StepResult)
-async def step(action: ScalerAction):
+async def step(action: Union[ScalerAction, CodeReviewAction, Any]):
     global _env_instance
-    if _env_instance is None or _env_instance.is_done:
-        _env_instance = CloudAutoScalerEnvironment()
-        _env_instance.reset()
+    if _env_instance is None:
+        return {"error": "Call /reset first"}
         
     obs, reward, done, info = _env_instance.step(action)
-    log.info(
-        f"step={obs.step_number} action={action.action} servers={obs.active_servers} "
-        f"util={obs.utilization:.2f} latency={obs.latency_ms:.0f}ms reward={reward:+.3f}"
-    )
+    
+    # Generic logging
+    log.info(f"step={getattr(obs, 'step_number', '?')} reward={reward:+.3f} done={done}")
+    
     return StepResult(observation=obs, reward=reward, done=done, info=info)
     
 

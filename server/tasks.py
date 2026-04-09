@@ -63,12 +63,28 @@ def grade_task_hard(state) -> float:
     raw_score = _calculate_score_logic(state)
     return normalize_score(raw_score)
 
+from server.code_review_logic import grade_code_review_trajectory
+
 def grade_task(task_name: str, state) -> float:
     """
     Dispatches to the specific grader based on task name.
-    Ensures all scores are strictly within (0.001, 0.999).
+    Supports both CloudAutoScaler and CodeReview environments.
     """
     task_name = task_name.lower()
+    
+    # --- CodeReview Environment Tasks ---
+    if "codereview" in task_name or "code_review" in task_name:
+        difficulty = "easy"
+        if "hard" in task_name: difficulty = "hard"
+        elif "medium" in task_name: difficulty = "medium"
+        
+        # CodeReviewState stores step_rewards as a list
+        return grade_code_review_trajectory(
+            getattr(state, "step_rewards", []), 
+            difficulty
+        )
+
+    # --- CloudAutoScaler Environment Tasks ---
     if "hard" in task_name:
         return grade_task_hard(state)
     elif "medium" in task_name:

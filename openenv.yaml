@@ -6,6 +6,9 @@ tasks:
   - autoscaling_easy
   - autoscaling_medium
   - autoscaling_hard
+  - code_review_easy
+  - code_review_medium
+  - code_review_hard
 
 environment:
   server_port: 7860

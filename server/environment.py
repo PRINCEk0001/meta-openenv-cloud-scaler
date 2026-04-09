@@ -18,7 +18,7 @@ except ImportError:
     _BaseEnvironment = BaseModel
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from models import ScalerAction, ScalerObservation, ScalerState
+from models import ScalerObservation, ScalerAction, ScalerState, CodeReviewObservation, CodeReviewAction, CodeReviewState
 
 
 MAX_STEPS = 50
@@ -239,3 +239,60 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
     @property
     def episode_return(self) -> float:
         return round(self._state.total_reward, 4) if self._state else 0.0
+
+class CodeReviewEnvironment:
+    """
+    Server-side implementation of the CodeReview environment.
+    Manages 5-step episodes and trajectory rewards.
+    """
+    def __init__(self):
+        self._state = None
+        self._difficulty = "easy"
+
+    def reset(self, task_name: str = "code_review_easy") -> CodeReviewObservation:
+        self._state = CodeReviewState(
+            episode_id=f"cr_{random.randint(1000, 9999)}",
+            step_count=0,
+            step_rewards=[]
+        )
+        self._difficulty = "easy"
+        if "hard" in task_name: self._difficulty = "hard"
+        elif "medium" in task_name: self._difficulty = "medium"
+        
+        return self._make_obs()
+
+    def _make_obs(self) -> CodeReviewObservation:
+        return CodeReviewObservation(
+            file_content="def solve():\n    return 42",
+            diff_summary="Added a basic function.",
+            step_number=self._state.step_count,
+            total_steps=5
+        )
+
+    def step(self, action: CodeReviewAction) -> Tuple[CodeReviewObservation, float, bool, dict]:
+        if not self._state:
+            self.reset()
+            
+        # Determine reward based on the rubric constants provided by the user
+        reward = 0.90 # Perfect
+        if action.action_type == "approve" and self._state.step_count == 4:
+            reward = 0.10 # Catastrophic
+        elif action.action_type == "reject":
+            reward = 0.88 # Near-Perfect
+            
+        self._state.step_count += 1
+        self._state.step_rewards.append(reward)
+        
+        done = (self._state.step_count >= 5)
+        obs = self._make_obs()
+        
+        info = {
+            "is_success": reward >= 0.70,
+            "step_reward": reward
+        }
+        
+        return obs, float(reward), done, info
+
+    @property
+    def is_done(self) -> bool:
+        return self._state.step_count >= 5 if self._state else True

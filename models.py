@@ -3,7 +3,7 @@ Pydantic schemas for the Cloud AutoScaler env AND the WhyDidItFail env.
 Falls back to base pydantic models if openenv-core isn't installed yet.
 """
 
-from typing import Literal, Optional
+from typing import Literal, Optional, Any, Union
 from pydantic import BaseModel, Field
 
 try:
@@ -38,13 +38,13 @@ class ScalerState(_State):
 
 # API response wrappers for the FastAPI server
 class StepResult(BaseModel):
-    observation: ScalerObservation
+    observation: Union[ScalerObservation, CodeReviewObservation, Any]
     reward: float
     done: bool
     info: dict = Field(default_factory=dict)
 
 class ResetResult(BaseModel):
-    observation: ScalerObservation
+    observation: Union[ScalerObservation, CodeReviewObservation, Any]
     info: dict = Field(default_factory=dict)
 
 class EnvInfo(BaseModel):
