@@ -145,6 +145,7 @@ class CloudScalerEnv(gym.Env):
             base = 0.30                                 # bad
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
+        raw = base - efficiency_penalty
         # Ultra-strict clamp, now using [0.001, 0.999] range
         score = max(0.001, min(0.999, float(raw)))
         return float(round(score, 3))

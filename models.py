@@ -36,6 +36,29 @@ class ScalerState(_State):
     peak_traffic: float = 0.0
     avg_latency: float = 0.0
 
+# ── CodeReview env models ───────────────────────────────────────────────────
+
+class CodeReviewAction(BaseModel):
+    """Action submitted by the agent inside a CodeReview episode."""
+    action_type: Literal["approve", "reject", "request_changes", "comment"]
+    severity: Optional[Literal["low", "medium", "high", "critical"]] = None
+    comment: Optional[str] = None
+    reasoning: Optional[str] = None
+
+class CodeReviewObservation(BaseModel):
+    """Observation returned after each step in a CodeReview episode."""
+    file_content: str
+    diff_summary: str
+    step_number: int
+    total_steps: int = 5
+
+class CodeReviewState(BaseModel):
+    """Internal state storage for CodeReview environment."""
+    episode_id: str
+    step_count: int = 0
+    step_rewards: list[float] = Field(default_factory=list)
+    catastrophic_failure: bool = False
+
 # API response wrappers for the FastAPI server
 class StepResult(BaseModel):
     observation: Union[ScalerObservation, CodeReviewObservation, Any]
