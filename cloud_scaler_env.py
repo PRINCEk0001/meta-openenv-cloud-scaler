@@ -45,12 +45,13 @@ class CloudScalerEnv(gym.Env):
         1 — add      (provision +1 server)
         2 — remove   (deprovision -1 server, floor = 1)
 
-    Reward (normalized to [-1.0, +1.0]):
-        +1.0  — latency < 50 ms and low server cost
-        +0.6  — latency < 150 ms (degraded)
-        +0.3  — latency < 500 ms (bad)
-        -1.0  — latency >= 500 ms (critical outage penalty)
-        efficiency_penalty: up to -0.2 for over-provisioning
+    Reward — strictly in open interval (0, 1), never 0.0 or 1.0:
+        0.97  — latency < 50 ms  (excellent)
+        0.60  — latency < 150 ms (degraded)
+        0.30  — latency < 500 ms (bad)
+        0.02  — latency >= 500ms (critical outage, base before penalty)
+        efficiency_penalty: up to -0.20 for over-provisioning
+        hard clamp: max(0.01, min(0.99, raw))
 
     Episode ends:
         terminated = False (no natural terminal state in this env)
@@ -119,26 +120,33 @@ class CloudScalerEnv(gym.Env):
 
     def _calculate_reward(self, latency: float, servers: int) -> float:
         """
-        Step reward normalized to [-1.0, +1.0].
+        Step reward strictly in the open interval (0, 1) — never 0.0 or 1.0.
 
-        • latency < 50 ms  → base = +1.0  (healthy)
-        • latency < 150 ms → base = +0.6  (degraded)
-        • latency < 500 ms → base = +0.3  (bad)
-        • latency >= 500ms → hard outage penalty of -1.0
-        • efficiency_penalty: up to -0.2 for over-provisioning (50 servers)
+        Base scores (before efficiency penalty):
+        • latency < 50 ms  → base = 0.97  (excellent)
+        • latency < 150 ms → base = 0.60  (degraded)
+        • latency < 500 ms → base = 0.30  (bad)
+        • latency >= 500ms → base = 0.02  (critical outage)
+
+        efficiency_penalty: (servers / MAX_SERVERS) * 0.20
+        Hard clamp: max(0.01, min(0.99, raw))
         """
         if latency >= 500.0:
-            return -1.0                                 # critical outage (normalized)
-
-        if latency < 50.0:
-            base = 1.0
+            base = 0.02                                 # critical outage
+            efficiency_penalty = 0.0                    # don't penalize cost during outage
+        elif latency < 50.0:
+            base = 0.97                                 # excellent
+            efficiency_penalty = (servers / MAX_SERVERS) * 0.20
         elif latency < 150.0:
-            base = 0.6
+            base = 0.60                                 # degraded
+            efficiency_penalty = (servers / MAX_SERVERS) * 0.20
         else:
-            base = 0.3
+            base = 0.30                                 # bad
+            efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
-        efficiency_penalty = (servers / MAX_SERVERS) * 0.2
-        return float(max(-1.0, base - efficiency_penalty))
+        raw = base - efficiency_penalty
+        # Hard clamp: guarantee strictly open (0, 1)
+        return float(round(max(0.01, min(0.99, raw)), 4))
 
     def _make_obs(self, traffic: float, latency: float) -> np.ndarray:
         """Pack state into a float32 numpy array matching observation_space."""

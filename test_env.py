@@ -194,8 +194,8 @@ check(r_b_up >= r_b_hold,
 r_c, lat_c = forced_scenario(1, action=0, task="autoscaling_hard")
 print(f"\n  Scenario C — Critical Outage / Do Nothing:")
 print(f"    avg_reward={r_c:.4f}  avg_latency={lat_c:.1f}ms")
-check(r_c < 0,
-      "Outage reward is strongly negative (< 0)",
+check(r_c < 0.05,
+      "Outage reward is very low (< 0.05)",
       f"got {r_c:.4f}")
 check(lat_c > 200,
       "Outage latency is dangerously high (> 200 ms)",

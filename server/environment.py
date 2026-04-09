@@ -94,44 +94,38 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
         return min(1000.0, 600.0 + ((utilization - 1.0) / 0.5) * 400.0)
 
     def _calculate_reward(self, latency: float, servers: int) -> float:
-        # Calculate raw penalty and map to [0, 1] range.
-        # Max crash penalty is -10. Max cost penalty is 50 * -0.04 = -2.
-        # Best scenario: latency < 50ms (+1), servers = 1 (-0.04) => 0.96 => ~1.0
-        # Worst scenario: crash (-10), 50 servers (-2) => -12.0
-        
-        perf = 1.0 if latency < 50.0 else 0.0
-        cost = -0.04 * servers
-        crash = -10.0 if latency > 500.0 else 0.0
-        
-        raw_reward = perf + cost + crash
-        
-        # Normalize: raw range approx [-12.0, 1.0]
-        # Let's cleanly remap:
-        # If crash, flat 0.0 immediately.
-        if crash < 0.0:
-            return 0.0
-            
-        # If no crash, raw_reward is between -2.0 and 1.0.
-        # We can normalize it. 
-        # A good step yields > 0.0. A poor step yields < 0.0.
-        # Instead, let's just make it simpler directly in [0, 1]:
-        # Perf is 0 or 1.
-        # Penalty for servers is up to 0.5.
-        
-        # NEW REWARD FUNCTION [-1.0, 1.0] to match cloud_scaler_env.py
-        if latency > 500.0:
-            return -1.0 # critical outage
+        # Calculate a step score strictly in the open interval (0, 1).
+        # The grader requires: 0.0 < score < 1.0 (exclusive on both ends).
+        #
+        # Thresholds:
+        #   latency >= 500ms  -> near-zero score (crash / severe outage)
+        #   latency <  50ms   -> near-perfect score
+        #   otherwise         -> moderate score
+        #
+        # An efficiency penalty is subtracted based on server count.
 
-        if latency < 50.0:
-            base_score = 1.0
+        if latency >= 500.0:
+            # Critical outage — very low score but strictly > 0
+            base_score = 0.02
+            efficiency_penalty = 0.0
+        elif latency < 50.0:
+            # Excellent performance
+            base_score = 0.97
+            efficiency_penalty = (servers / MAX_SERVERS) * 0.20
         elif latency < 150.0:
-            base_score = 0.6
+            # Acceptable performance
+            base_score = 0.60
+            efficiency_penalty = (servers / MAX_SERVERS) * 0.20
         else:
-            base_score = 0.3
-            
-        efficiency_penalty = (servers / MAX_SERVERS) * 0.2
-        final_score = max(-1.0, base_score - efficiency_penalty)
-        return final_score
+            # Poor performance (high latency, not yet crashing)
+            base_score = 0.30
+            efficiency_penalty = (servers / MAX_SERVERS) * 0.20
+
+        raw = base_score - efficiency_penalty
+
+        # Hard clamp to strictly open (0, 1) — guards against any float edge cases
+        final_score = max(0.01, min(0.99, raw))
+        return float(round(final_score, 4))
 
     def reset(self, task_name: str = "autoscaling_easy") -> ScalerObservation:
         self._task_name = task_name

@@ -124,7 +124,7 @@ def run_task(env, task_name: str):
                 reward = res.reward
                 done = res.done
             except Exception as ex:
-                reward = 0.0
+                reward = 0.01
                 done = True
                 err = str(ex).replace("\n", " ")
 
