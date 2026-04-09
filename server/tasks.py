@@ -12,7 +12,14 @@ def normalize_score(raw_score: float) -> float:
     
     # Use 3 decimal precision for 0.001 bounds
     score = max(0.001, min(0.999, float(raw_score)))
-    return float(round(score, 3))
+    score = round(score, 3)
+
+    if score >= 1.0:
+        score = 0.999
+    if score <= 0.0:
+        score = 0.001
+
+    return float(score)
 
 def _calculate_score_logic(state) -> float:
     """Internal shared logic for scoring based on latency and efficiency."""

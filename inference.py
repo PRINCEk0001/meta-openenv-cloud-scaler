@@ -130,6 +130,11 @@ def run_task(env, task_name: str):
             safe_reward = float(reward)
             safe_reward = max(0.001, min(0.999, safe_reward))
             safe_reward = round(safe_reward, 3)
+
+            if safe_reward >= 1.0:
+                safe_reward = 0.999
+            if safe_reward <= 0.0:
+                safe_reward = 0.001
             
             rewards_float.append(safe_reward)
             rewards_formatted.append(f"{safe_reward:.3f}")

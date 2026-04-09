@@ -8,7 +8,14 @@ from typing import List
 def clamp_ultra_strict(score: float) -> float:
     """Implement the [0.001, 0.999] ultra-strict safety clamp."""
     s = max(0.001, min(0.999, float(score)))
-    return float(round(s, 3))
+    s = round(s, 3)
+
+    if s >= 1.0:
+        s = 0.999
+    if s <= 0.0:
+        s = 0.001
+
+    return float(s)
 
 def grade_code_review_trajectory(step_rewards: List[float], difficulty: str) -> float:
     """
