@@ -123,32 +123,31 @@ def run_task(env, task_name: str):
                 reward = res.reward
                 done = res.done
             except Exception as ex:
-                reward = 0.01
+                reward = 0.001
                 done = True
                 err = str(ex).replace("\n", " ")
 
-            # Clamp reward to stay strictly within (0, 1)
-            reward = max(0.01, min(0.99, float(reward)))
-            rewards.append(f"{reward:.4f}")
+            # Clamp reward internally, but format to 2 decimal places for output
+            reward = max(0.001, min(0.999, float(reward)))
+            rewards.append(f"{reward:.2f}")
             err_log = err if err else "null"
             done_str = "true" if done else "false"
 
             # [STEP] log MUST be exactly like this
-            print(f"[STEP] step={step} action={action_str} reward={reward:.4f} done={done_str} error={err_log}", flush=True)
+            print(f"[STEP] step={step} action={action_str} reward={reward:.2f} done={done_str} error={err_log}", flush=True)
 
     finally:
-        # [END] log — success MUST be a float strictly in (0, 1), never true/false.
-        # Meta's grader parses this field as the task score; booleans map to 1.0/0.0
-        # which fails the strict-bounds check.
+        # [END] log — success MUST be true or false.
         if len(rewards) > 0:
-            avg_reward = sum(float(r) for r in rewards) / len(rewards)
+            avg_score = sum(float(r) for r in rewards) / len(rewards)
         else:
-            avg_reward = 0.01
+            avg_score = 0.001
         
-        # Hard clamp for the final task score
-        task_score = max(0.01, min(0.99, round(avg_reward, 4)))
+        # Determine boolean success based on average score threshold
+        success_val = "true" if avg_score >= 0.5 else "false"
         r_str = ",".join(rewards)
-        print(f"[END] success={task_score:.4f} steps={step} rewards={r_str}", flush=True)
+        print(f"[END] success={success_val} steps={step} rewards={r_str}", flush=True)
+
 
 
 if __name__ == "__main__":

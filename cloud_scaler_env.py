@@ -21,7 +21,7 @@ from gymnasium import spaces
 SERVER_CAPACITY  = 25      # req/s per server
 MIN_SERVERS      = 1
 MAX_SERVERS      = 50
-MAX_STEPS        = 200     # truncated after this many steps (required by graders)
+MAX_STEPS        = 50      # truncated after this many steps (matches openenv.yaml)
 
 # Obs-space bounds  [traffic,  servers,  latency_ms]
 OBS_LOW  = np.array([   0.0,       1.0,        0.0], dtype=np.float32)
@@ -59,7 +59,7 @@ class CloudScalerEnv(gym.Env):
     """
 
     metadata = {"render_modes": []}
-    reward_range = (0.01, 0.99)
+    reward_range = (0.001, 0.999)
 
     def __init__(self, task: str = "autoscaling_easy", render_mode=None):
         super().__init__()
@@ -147,7 +147,7 @@ class CloudScalerEnv(gym.Env):
 
         raw = base - efficiency_penalty
         # Hard clamp: guarantee strictly open (0, 1)
-        return float(round(max(0.01, min(0.99, raw)), 4))
+        return float(round(max(0.001, min(0.999, raw)), 4))
 
     def _make_obs(self, traffic: float, latency: float) -> np.ndarray:
         """Pack state into a float32 numpy array matching observation_space."""

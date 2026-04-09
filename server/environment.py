@@ -124,7 +124,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
         raw = base_score - efficiency_penalty
 
         # Hard clamp to strictly open (0, 1) — guards against any float edge cases
-        final_score = max(0.01, min(0.99, raw))
+        final_score = max(0.001, min(0.999, raw))
         return float(round(final_score, 4))
 
     def reset(self, task_name: str = "autoscaling_easy") -> ScalerObservation:
@@ -209,7 +209,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             "active_servers": int(self._active_servers),
             "step_count": int(self._step_count),
             "episode_id": self._state.episode_id,
-            "total_reward": round(self._state.total_reward, 2),
+            "total_raw_reward": round(self._state.total_reward, 2),
             "avg_latency": round(self._state.avg_latency, 2),
             "peak_traffic": round(self._state.peak_traffic, 2),
         }

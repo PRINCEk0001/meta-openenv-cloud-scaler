@@ -17,8 +17,9 @@ import uvicorn
 from pydantic import BaseModel
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from models import EnvInfo, ResetResult, ScalerAction, ScalerObservation, StepResult
+from models import EnvInfo, ResetResult, ScalerAction, ScalerObservation, StepResult, GraderRequest, GraderResponse
 from server.environment import CloudAutoScalerEnvironment
+from server.tasks import grade_task
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("cloud-autoscaler")
@@ -104,6 +105,29 @@ async def step(action: ScalerAction):
         f"util={obs.utilization:.2f} latency={obs.latency_ms:.0f}ms reward={reward:+.3f}"
     )
     return StepResult(observation=obs, reward=reward, done=done, info=info)
+    
+
+@app.post("/grader", response_model=GraderResponse)
+async def grader(req: GraderRequest):
+    global _env_instance
+    try:
+        if _env_instance is None or _env_instance._state is None:
+            log.warning(f"Grader called for {req.task} but no environment state is available.")
+            return GraderResponse(task=req.task, score=0.001, is_success=False)
+        
+        score = grade_task(req.task, _env_instance._state)
+        
+        # Hard safety clamp to ensure output is strictly within (0.001, 0.999)
+        score = float(round(max(0.001, min(0.999, score)), 4))
+        
+        is_success = bool(score >= 0.5)  # >= 0.5 is usually the success threshold
+        log.info(f"Grading ({req.task}) -> score={score:.4f}, success={is_success}")
+        return GraderResponse(task=req.task, score=score, is_success=is_success)
+        
+    except Exception as e:
+        log.error(f"Critical error during grading of {req.task}: {e}")
+        return GraderResponse(task=req.task, score=0.001, is_success=False)
+
 
 
 @app.websocket("/ws")

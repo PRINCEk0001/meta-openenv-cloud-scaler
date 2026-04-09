@@ -38,25 +38,25 @@ This repository is strictly structured to support both local programmatic benchm
 ### OpenEnv Compliance Features
 * **Gymnasium v0.29.1 standard:** Implements a strict `CloudScalerEnv(gym.Env)` class.
 * **Tuple returns:** Standardized `(obs, info)` for resets and `(obs, reward, terminated, truncated, info)` for steps.
-* **Bounded execution:** Hard limits capped at `MAX_STEPS = 200` to prevent infinite loops (`truncated=True`).
-* **Normalized Rewards:** Bounded linearly from `[-1.0, 1.0]`.
+* **Bounded execution:** Hard limits capped at `MAX_STEPS = 50` to prevent infinite loops (`truncated=True`).
+* **Normalized Rewards:** Strictly clamped to the open interval `(0.001, 0.999)`.
 * **Standardized Metadata:** The `info` dictionary strictly tracks `is_success`, `latency_ms`, `active_servers`, and `step_count`.
 
 ---
 
 ## 📊 Simulation Dynamics
 
-* **Episode Horizon:** 200 steps
+* **Episode Horizon:** 50 steps
 * **Initial State:** 10 active servers handling a baseline ~250 req/s load.
 * **Capacity Limit:** Each server is capped at precisely 25 requests per second.
 * **Traffic Volatility:** Traffic naturally oscillates between 250 and 750 req/s. Spike events (e.g. +400 req/s) occur randomly 20% of the time, generally every 5th step.
 
-### Reward Function (Normalized `[-1.0, 1.0]`)
-* **Healthy (`+1.0 base`):** System latency < 50ms.
-* **Degraded (`+0.6 base`):** System latency 50ms - 150ms.
-* **Poor (`+0.3 base`):** System latency 150ms - 500ms.
-* **Critical Outage (`-1.0 penalty`):** System latency > 500ms (Hard failure).
-* *Note: Up to `-0.2` is dynamically deducted from the base score to penalize capacity over-provisioning (idle servers).*
+### Reward Function (Clamped `(0.001, 0.999)`)
+* **Healthy (`0.97` base):** System latency < 50ms.
+* **Degraded (`0.60` base):** System latency 50ms - 150ms.
+* **Poor (`0.30` base):** System latency 150ms - 500ms.
+* **Critical Outage (`0.02` base):** System latency > 500ms (Hard failure).
+* *Note: Up to `-0.20` is dynamically deducted from the base score to penalize capacity over-provisioning (idle servers), with a final hard clamp at `0.001`.*
 
 ### Latency Modeling 
 * **< 70% load:** 20-40ms (Optimal)
@@ -128,7 +128,7 @@ python demo.py
 This environment is fully prepared for automated evaluation by Open LLM Agents (e.g., Nemotron 3 Super). 
 
 ### Baseline Performance (Heuristic)
-Running the baseline standard agent (`client.py` using simple utiliziation threshold heuristics) over 200 steps typically yields a **Total Reward between ~145.0 and ~165.0** (normalized). Score variance strictly depends on the randomized +400 req/s traffic spikes.
+Running the baseline standard agent (`client.py` using simple utiliziation threshold heuristics) over 50 steps typically yields a **Total Reward between ~35.0 and ~45.0**. Score variance strictly depends on the randomized +400 req/s traffic spikes.
 
 ### LLM Agent Variance & Readiness
 - **Docstring Prompts**: The environment is equipped with rich `__doc__` strings in the `CloudScalerEnv` class, explicitly detailing the `[latency, cost, capacity]` trade-offs as expected by zero-shot LLM prompts.
