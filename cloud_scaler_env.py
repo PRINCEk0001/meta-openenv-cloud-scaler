@@ -146,8 +146,14 @@ class CloudScalerEnv(gym.Env):
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
         raw = base - efficiency_penalty
-        # Hard clamp: guarantee strictly open (0.01, 0.99)
-        return float(round(max(0.01, min(0.99, raw)), 3))
+        # Ultra-strict clamp for absolute boundary safety
+        score = max(0.01, min(0.99, float(raw)))
+        score = round(score, 2)
+        if score <= 0.01:
+            score = 0.02
+        elif score >= 0.99:
+            score = 0.98
+        return float(score)
 
     def _make_obs(self, traffic: float, latency: float) -> np.ndarray:
         """Pack state into a float32 numpy array matching observation_space."""

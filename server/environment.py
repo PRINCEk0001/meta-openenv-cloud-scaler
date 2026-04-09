@@ -126,9 +126,14 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
         if math.isnan(raw) or math.isinf(raw):
             raw = 0.02
 
-        # Hard clamp to strictly open (0.01, 0.99)
-        final_score = max(0.01, min(0.99, raw))
-        return float(round(final_score, 3))
+        # Ultra-strict clamp as suggested by user
+        score = max(0.01, min(0.99, float(raw)))
+        score = round(score, 2)
+        if score <= 0.01:
+            score = 0.02
+        elif score >= 0.99:
+            score = 0.98
+        return float(score)
 
     def reset(self, task_name: str = "autoscaling_easy") -> ScalerObservation:
         self._task_name = task_name

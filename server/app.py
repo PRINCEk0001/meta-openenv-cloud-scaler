@@ -115,13 +115,19 @@ async def grader(req: GraderRequest):
             log.warning(f"Grader called for {req.task} but no environment state is available.")
             return GraderResponse(task=req.task, score=0.10, is_success=False)
         
-        score = grade_task(req.task, _env_instance._state)
+        raw_score = grade_task(req.task, _env_instance._state)
         
-        # Hard safety clamp to ensure output is strictly within (0.01, 0.99)
-        score = float(round(max(0.01, min(0.99, score)), 3))
-        
-        is_success = bool(score >= 0.5)  # >= 0.5 is usually the success threshold
-        log.info(f"Grading ({req.task}) -> score={score:.4f}, success={is_success}")
+        # Ultra-strict clamp as suggested by user
+        score = float(raw_score)
+        score = max(0.01, min(0.99, score))
+        score = round(score, 2)
+        if score <= 0.01:
+            score = 0.02
+        elif score >= 0.99:
+            score = 0.98
+            
+        is_success = bool(score >= 0.5)
+        log.info(f"Grading ({req.task}) -> Raw={raw_score:.4f}, Final={score:.2f}, success={is_success}")
         return GraderResponse(task=req.task, score=score, is_success=is_success)
         
     except Exception as e:
