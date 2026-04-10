@@ -25,6 +25,11 @@ from server.tasks import grade_task
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", stream=sys.stderr)
 log = logging.getLogger("cloud-autoscaler")
 
+def safe_score(raw):
+    """Implement the strict [0.01, 0.99] safety clamp and 2dp formatting."""
+    clamped = max(0.01, min(0.99, float(raw or 0.01)))
+    return f"{clamped:.2f}"
+
 _env_instance = None
 
 @asynccontextmanager
@@ -128,20 +133,11 @@ async def grader(req: GraderRequest):
             return GraderResponse(task=req.task, score=0.10, is_success=False)
         
         raw_score = grade_task(req.task, _env_instance._state)
+        score_str = safe_score(raw_score)
         
-        # Ultra-strict clamp as suggested by user, now with [0.01, 0.99] bounds
-        score = float(raw_score)
-        score = max(0.01, min(0.99, score))
-        score = round(score, 2)
-            
-        if score >= 1.0:
-            score = 0.99
-        if score <= 0.0:
-            score = 0.01
-
-        is_success = bool(score >= 0.5)
-        log.info(f"Grading ({req.task}) -> Raw={raw_score:.4f}, Final={score:.2f}, success={is_success}")
-        return GraderResponse(task=req.task, score=score, is_success=is_success)
+        is_success = bool(float(score_str) >= 0.5)
+        log.info(f"Grading ({req.task}) -> Raw={raw_score:.4f}, Final={score_str}, success={is_success}")
+        return GraderResponse(task=req.task, score=float(score_str), is_success=is_success)
         
     except Exception as e:
         log.error(f"Critical error during grading of {req.task}: {e}")

@@ -26,6 +26,11 @@ SERVER_CAPACITY = 25
 MIN_SERVERS = 1
 MAX_SERVERS = 50
 
+def safe_score(raw):
+    """Implement the strict [0.01, 0.99] safety clamp and 2dp formatting."""
+    clamped = max(0.01, min(0.99, float(raw or 0.01)))
+    return f"{clamped:.2f}"
+
 class CloudAutoScalerEnvironment(_BaseEnvironment):
     """
     Cloud server auto-scaling RL environment.
@@ -123,16 +128,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
         raw = base_score - efficiency_penalty
-
-        score = max(0.01, min(0.99, float(raw)))
-        score = round(score, 2)
-
-        if score >= 1.0:
-            score = 0.99
-        if score <= 0.0:
-            score = 0.01
-
-        return float(score)
+        return safe_score(raw)
 
     def reset(self, task_name: str = "autoscaling_easy") -> ScalerObservation:
         self._task_name = task_name
@@ -287,10 +283,10 @@ class CodeReviewEnvironment:
         
         info = {
             "is_success": reward >= 0.70,
-            "step_reward": reward
+            "step_reward": safe_score(reward)
         }
         
-        return obs, float(reward), done, info
+        return obs, float(safe_score(reward)), done, info
 
     @property
     def is_done(self) -> bool:

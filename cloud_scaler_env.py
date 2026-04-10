@@ -57,6 +57,11 @@ class CloudScalerEnv(gym.Env):
     metadata = {"render_modes": []}
     reward_range = (0.01, 0.99)
 
+def safe_score(raw):
+    """Implement the strict [0.01, 0.99] safety clamp and 2dp formatting."""
+    clamped = max(0.01, min(0.99, float(raw or 0.01)))
+    return f"{clamped:.2f}"
+
     def __init__(self, task: str = "autoscaling_easy", render_mode=None):
         super().__init__()
 
@@ -146,16 +151,7 @@ class CloudScalerEnv(gym.Env):
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
         raw = base_score - efficiency_penalty
-
-        score = max(0.01, min(0.99, float(raw)))
-        score = round(score, 2)
-
-        if score >= 1.0:
-            score = 0.99
-        if score <= 0.0:
-            score = 0.01
-
-        return float(score)
+        return float(safe_score(raw))
 
     def _make_obs(self, traffic: float, latency: float) -> np.ndarray:
         """Pack state into a float32 numpy array matching observation_space."""
@@ -249,7 +245,7 @@ class CloudScalerEnv(gym.Env):
             "total_reward"   : float(self._total_reward),
         }
 
-        return obs, round(float(reward), 2), terminated, truncated, info
+        return obs, float(safe_score(reward)), terminated, truncated, info
 
     def render(self):
         """Text render for debugging."""

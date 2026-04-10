@@ -5,17 +5,14 @@ Implements multipliers, consistency bonuses, and ultra-strict clamping.
 import math
 from typing import List
 
+def safe_score(raw):
+    """Implement the strict [0.01, 0.99] safety clamp and 2dp formatting."""
+    clamped = max(0.01, min(0.99, float(raw or 0.01)))
+    return f"{clamped:.2f}"
+
 def clamp_ultra_strict(score: float) -> float:
     """Implement the [0.01, 0.99] ultra-strict safety clamp."""
-    s = max(0.01, min(0.99, float(score)))
-    s = round(s, 2)
-
-    if s >= 1.0:
-        s = 0.99
-    if s <= 0.0:
-        s = 0.01
-
-    return float(s)
+    return float(safe_score(score))
 
 def grade_code_review_trajectory(step_rewards: List[float], difficulty: str) -> float:
     """

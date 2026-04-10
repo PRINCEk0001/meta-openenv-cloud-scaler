@@ -5,21 +5,14 @@ Ensures all scores are strictly within (0.001, 0.999).
 
 import math
 
+def safe_score(raw):
+    """Implement the strict [0.01, 0.99] safety clamp and 2dp formatting."""
+    clamped = max(0.01, min(0.99, float(raw or 0.01)))
+    return f"{clamped:.2f}"
+
 def normalize_score(raw_score: float) -> float:
     """Clamp score strictly away from (0, 1) boundaries using [0.01, 0.99]."""
-    if raw_score is None or math.isnan(raw_score) or math.isinf(raw_score):
-        return 0.1
-    
-    # Use 2 decimal precision for 0.01 bounds
-    score = max(0.01, min(0.99, float(raw_score)))
-    score = round(score, 2)
-
-    if score >= 1.0:
-        score = 0.99
-    if score <= 0.0:
-        score = 0.01
-
-    return float(score)
+    return float(safe_score(raw_score))
 
 def _calculate_score_logic(state) -> float:
     """Internal shared logic for scoring based on latency and efficiency."""
