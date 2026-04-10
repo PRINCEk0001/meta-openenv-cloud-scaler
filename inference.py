@@ -11,30 +11,23 @@ from models import ScalerAction
 from server.environment import CloudAutoScalerEnvironment
 
 # Load config from env or set defaults
-HF_TOKEN     = os.getenv("HF_TOKEN")
-API_BASE_URL = os.getenv("API_BASE_URL")
-
-# Auto-detect HF router if using hf_ token and no base URL set
-if HF_TOKEN and HF_TOKEN.startswith("hf_") and not API_BASE_URL:
-    API_BASE_URL = "https://router.huggingface.co/v1"
-elif not API_BASE_URL:
-    API_BASE_URL = "https://api.openai.com/v1"
-
-# Switch to Llama-3.3-70B-Instruct for better stability and lower quota restrictions
-MODEL_NAME   = os.getenv("MODEL_NAME", "meta-llama/Llama-3.3-70B-Instruct")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.groq.com/openai/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "llama3.1-8b-instant")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
 openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN or "dummy-token")
 
 # Prompt engineering to get valid JSON out of the LLM
 SYS_PROMPT = "You're a cloud infra bot. Output ONLY a valid JSON object with key 'action' and value 0, 1, or 2. No markdown blocks."
 
-def clamp_reward(r, eps=0.01):
-    """Clamps reward to [0.01, 0.99] to avoid boundary rejection."""
+def clamp_reward(r):
+    """Implement user requested clamp with EPS=0.01 and float cast."""
+    EPS = 0.01
     try:
         val = float(r)
     except (TypeError, ValueError):
         val = 0.01
-    return max(eps, min(1.0 - eps, val))
+    return max(EPS, min(1.0 - EPS, val))
 
 def get_scaling_action(obs) -> ScalerAction:
     """Queries the LLM for the next scaling action based on our current traffic/utilization."""
@@ -148,8 +141,10 @@ def run_task(env: CloudAutoScalerEnvironment, task_name: str):
             err_log = err if err else "null"
             done_str = "true" if done else "false"
 
+            # User requested pattern: clamp then format to 2dp
+            clamped_val = clamp_reward(reward)
             # [STEP] - PLURAL rewards=, 2dp formatting, flush=True
-            print(f"[STEP] step={step} action={action_log_str} rewards={clamp_reward(reward):.2f} done={done_str} error={err_log}", flush=True)
+            print(f"[STEP] step={step} action={action_log_str} rewards={clamped_val:.2f} done={done_str} error={err_log}", flush=True)
             
             if done:
                 break
