@@ -18,13 +18,13 @@ _JUDGE_SYSTEM = textwrap.dedent("""
     - The CORRECT answer (failure mode label, suggested fix, reasoning guidelines).
     - The AGENT's submitted diagnosis (label, suggested_fix, reasoning).
 
-    Score the agent's submission on a 0.0–1.0 scale:
-    1.0 — exact label match AND reasoning cites real numeric evidence AND fix is appropriate
-    0.7 — exact label match AND reasoning is plausible but lacks specific numbers
-    0.4 — close but label is slightly wrong (e.g. "overfitting" vs "missing regularization")
-    0.1 — wrong label or no reasoning
+    Score the agent's submission on a 0.01-0.99 scale:
+    0.99 — exact label match AND reasoning cites real numeric evidence AND fix is appropriate
+    0.70 — exact label match AND reasoning is plausible but lacks specific numbers
+    0.40 — close but label is slightly wrong (e.g. "overfitting" vs "missing regularization")
+    0.10 — wrong label or no reasoning
 
-    Reply with ONLY a JSON object: {"score": <float 0-1>, "rationale": "<one sentence>"}
+    Reply with ONLY a JSON object: {"score": <float 0.01-0.99>, "rationale": "<one sentence>"}
     No markdown, no code fences.
 """).strip()
 
@@ -78,7 +78,7 @@ def judge(
         )
         text = (completion.choices[0].message.content or "").strip()
         data = json.loads(text)
-        raw  = float(data.get("score", 0.0))
-        return round(max(0.0, min(1.0, raw)), 4)
+        raw  = float(data.get("score", 0.01))
+        return round(max(0.01, min(0.99, raw)), 2)
     except Exception:
         return None
