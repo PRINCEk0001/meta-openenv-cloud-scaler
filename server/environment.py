@@ -217,7 +217,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             "peak_traffic": round(self._state.peak_traffic, 2),
         }
 
-        return obs, round(reward, 2), self._done, info
+        return obs, float(reward), self._done, info
 
     @property
     def current_step(self) -> int:

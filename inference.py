@@ -11,15 +11,19 @@ from models import ScalerAction
 from server.environment import CloudAutoScalerEnvironment
 
 # Load config from env or set defaults
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME   = os.getenv("MODEL_NAME", "gpt-4o-mini")
 HF_TOKEN     = os.getenv("HF_TOKEN")
+API_BASE_URL = os.getenv("API_BASE_URL")
 
-if not HF_TOKEN:
-    # Fallback for local testing if not in environment
-    HF_TOKEN = "dummy-token"
+# Auto-detect HF router if using hf_ token and no base URL set
+if HF_TOKEN and HF_TOKEN.startswith("hf_") and not API_BASE_URL:
+    API_BASE_URL = "https://router.huggingface.co/v1"
+elif not API_BASE_URL:
+    API_BASE_URL = "https://api.openai.com/v1"
 
-openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+# Switch to Llama-3.3-70B-Instruct for better stability and lower quota restrictions
+MODEL_NAME   = os.getenv("MODEL_NAME", "meta-llama/Llama-3.3-70B-Instruct")
+
+openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN or "dummy-token")
 
 # Prompt engineering to get valid JSON out of the LLM
 SYS_PROMPT = "You're a cloud infra bot. Output ONLY a valid JSON object with key 'action' and value 0, 1, or 2. No markdown blocks."
