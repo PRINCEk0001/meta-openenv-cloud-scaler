@@ -12,7 +12,7 @@ from server.environment import CloudAutoScalerEnvironment
 
 # Load config from env or set defaults
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.groq.com/openai/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "llama3.1-8b-instant")
+MODEL_NAME   = os.getenv("MODEL_NAME", "llama3.1-8b-instant")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN or "dummy-token")
@@ -20,14 +20,9 @@ openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN or "dummy-token")
 # Prompt engineering to get valid JSON out of the LLM
 SYS_PROMPT = "You're a cloud infra bot. Output ONLY a valid JSON object with key 'action' and value 0, 1, or 2. No markdown blocks."
 
-def clamp_reward(r):
-    """Implement user requested clamp with EPS=0.01 and float cast."""
-    EPS = 0.01
-    try:
-        val = float(r)
-    except (TypeError, ValueError):
-        val = 0.01
-    return max(EPS, min(1.0 - EPS, val))
+def clamp_reward(r, eps=0.01):
+    """Implement user requested clamp returning float."""
+    return max(eps, min(1.0 - eps, float(r)))
 
 def get_scaling_action(obs) -> ScalerAction:
     """Queries the LLM for the next scaling action based on our current traffic/utilization."""
@@ -129,8 +124,11 @@ def run_task(env: CloudAutoScalerEnvironment, task_name: str):
             err = None
             try:
                 # Direct step (returns obs, reward, done, info)
-                obs, reward, done, info = env.step(action_obj)
-                reward = float(reward)
+                res_obs, res_reward, done, info = env.step(action_obj)
+                # User requested raw_reward extraction
+                raw_reward = float(res_reward or 0.0)
+                reward = round(clamp_reward(raw_reward), 2)
+                obs = res_obs
             except Exception as ex:
                 reward = 0.01
                 done = True
@@ -141,10 +139,8 @@ def run_task(env: CloudAutoScalerEnvironment, task_name: str):
             err_log = err if err else "null"
             done_str = "true" if done else "false"
 
-            # User requested pattern: clamp then format to 2dp
-            clamped_val = clamp_reward(reward)
-            # [STEP] - PLURAL rewards=, 2dp formatting, flush=True
-            print(f"[STEP] step={step} action={action_log_str} rewards={clamped_val:.2f} done={done_str} error={err_log}", flush=True)
+            # [STEP] - Use :.2f float formatting
+            print(f"[STEP] step={step} action={action_log_str} rewards={reward:.2f} done={done_str} error={err_log}", flush=True)
             
             if done:
                 break
@@ -153,8 +149,8 @@ def run_task(env: CloudAutoScalerEnvironment, task_name: str):
         success_str = "true" if (len(rewards_float) > 0 and done) else "false"
         
         # [END] - Exactly 2 decimal places, comma-separated list
-        r_str = ",".join(f"{clamp_reward(r):.2f}" for r in rewards_float) if rewards_float else "0.01"
-        print(f"[END] success={success_str} steps={step} rewards={r_str}", flush=True)
+        r_str = ",".join(f"{r:.2f}" for r in rewards_float) if rewards_float else "0.01"
+        print(f"[END] success={success_str} steps={len(rewards_float)} rewards={r_str}", flush=True)
 
 
 if __name__ == "__main__":
