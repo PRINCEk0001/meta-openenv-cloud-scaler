@@ -12,7 +12,7 @@ from server.environment import CloudAutoScalerEnvironment
 
 # Load config from env or set defaults
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.groq.com/openai/v1")
-MODEL_NAME   = os.getenv("MODEL_NAME", "llama3.1-8b-instant")
+MODEL_NAME   = os.getenv("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN or "dummy-token")
