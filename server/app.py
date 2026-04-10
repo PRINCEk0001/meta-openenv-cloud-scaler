@@ -101,11 +101,8 @@ async def reset(req: ResetRequest = None):
     obs = _env_instance.reset(task_name=task_name)
     ep_id = getattr(_env_instance._state, "episode_id", "unknown")
     
-    # Logging based on env type
-    if isinstance(obs, CodeReviewObservation):
-        log.info(f"Resetting CodeReview ({task_name}) -> step={obs.step_number}")
-    else:
-        log.info(f"Resetting CloudScaler ({task_name}) -> servers={obs.active_servers}")
+    # [START] Mandatory Phase 1 log
+    print(f"[START] task={task_name} env=cloud-autoscaler-openenv model={os.getenv('MODEL_NAME', 'meta-llama/Llama-3.1-8B-Instruct')}", flush=True)
         
     return ResetResult(observation=obs, info={"episode_id": ep_id})
 
@@ -118,8 +115,10 @@ async def step(action: Union[ScalerAction, CodeReviewAction, Any]):
         
     obs, reward, done, info = _env_instance.step(action)
     
-    # Generic logging
-    log.info(f"step={getattr(obs, 'step_number', '?')} reward={reward:+.2f} done={done}")
+    # [STEP] Mandatory Phase 1 log
+    # Using 2dp formatting and plural rewards=
+    action_val = getattr(action, "action", 0)
+    print(f"[STEP] step={_env_instance._step_count} action={{\"action\":{action_val}}} rewards={reward:+.2f} done={'true' if done else 'false'} error=null", flush=True)
     
     return StepResult(observation=obs, reward=reward, done=done, info=info)
     
@@ -136,6 +135,13 @@ async def grader(req: GraderRequest):
         score_str = safe_score(raw_score)
         
         is_success = bool(float(score_str) >= 0.5)
+        
+        # [END] Mandatory Phase 1 log
+        # Extract rewards list from state if available
+        rewards_list = getattr(_env_instance._state, "step_rewards", [])
+        r_str = ",".join(f"{float(r):.2f}" for r in rewards_list) if rewards_list else "0.01"
+        print(f"[END] success={'true' if is_success else 'false'} steps={len(rewards_list)} rewards={r_str}", flush=True)
+
         log.info(f"Grading ({req.task}) -> Raw={raw_score:.4f}, Final={score_str}, success={is_success}")
         return GraderResponse(task=req.task, score=float(score_str), is_success=is_success)
         

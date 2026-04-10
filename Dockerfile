@@ -14,7 +14,8 @@ COPY . .
 RUN useradd -m -u 1000 user
 USER user
 
+# OpenEnv Phase 1 expects the server on 7860
 EXPOSE 7860
 
-# Runs inference directly, logging to stdout for OpenEnv evaluator
-CMD ["python", "inference.py"]
+# CMD launches the FastAPI server, which now handles OpenEnv logging internally
+CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]
