@@ -224,7 +224,7 @@ def safe_score(raw):
         latency = self._calculate_latency(traffic, self._active_servers)
         reward  = self._calculate_reward(latency, self._active_servers)
 
-        self._total_reward += reward
+        self._total_reward += float(reward)
 
         obs = self._make_obs(traffic, latency)
 

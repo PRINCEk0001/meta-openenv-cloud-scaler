@@ -41,7 +41,7 @@ def run_demo():
         # Log the result
         print(f"{res.observation.step_number:<6} | {act_name:<15} | {res.observation.active_servers:<8} | {res.observation.latency_ms:>6.1f} ms | {res.reward:>6.2f}")
         
-        total_reward += res.reward
+        total_reward += float(res.reward)
         obs = res.observation
 
     print("-" * 65)

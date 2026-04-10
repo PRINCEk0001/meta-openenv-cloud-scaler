@@ -185,7 +185,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
 
         # update internal state trackers
         self._state.step_count = self._step_count
-        self._state.total_reward += reward
+        self._state.total_reward += float(reward)
         self._state.peak_traffic = max(self._state.peak_traffic, traffic)
         
         # running average
