@@ -35,6 +35,12 @@ class ScalerState(_State):
     total_reward: float = 0.0
     peak_traffic: float = 0.0
     avg_latency: float = 0.0
+    # New history tracking for weighted rubric
+    latency_history: list[float] = Field(default_factory=list)
+    action_history: list[int] = Field(default_factory=list)
+    utilization_history: list[float] = Field(default_factory=list)
+    server_history: list[int] = Field(default_factory=list)
+    step_rewards: list[float] = Field(default_factory=list)
 
 # ── CodeReview env models ───────────────────────────────────────────────────
 

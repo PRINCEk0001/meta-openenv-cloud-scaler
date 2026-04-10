@@ -21,26 +21,51 @@ def normalize_score(raw_score: float) -> float:
     return float(safe_score(raw_score))
 
 def _calculate_score_logic(state) -> float:
-    """Internal shared logic for scoring based on latency and efficiency."""
-    if not state:
+    """
+    Implements the user's weighted rubric:
+    - 40% closeness to target utilization (70%)
+    - 25% response stability (latency consistency)
+    - 20% cost efficiency (inverse server count)
+    - 15% action smoothness (prevention of oscillation)
+    """
+    if not state or not getattr(state, "latency_history", []):
         return 0.1
 
-    # 1. Latency Component (Scale: 0.05 to 0.7)
-    if state.avg_latency < 50.0:
-        latency_score = 0.7
-    elif state.avg_latency < 500.0:
-        # linear decrease from 0.7 at 50ms to 0.1 at 500ms
-        latency_score = 0.7 - ((state.avg_latency - 50.0) / 450.0) * 0.6
-    else:
-        latency_score = 0.05
+    # 1. Utilization Score (40%) - Target 0.7 (70%)
+    avg_util = sum(state.utilization_history) / len(state.utilization_history)
+    # 1.0 if exactly 0.7, linear drop-off
+    util_score = max(0.0, 1.0 - abs(avg_util - 0.7) / 0.7)
 
-    # 2. Efficiency Component (Scale: 0.0 to 0.25)
-    if state.avg_latency < 500.0:
-        efficiency_score = 0.25
+    # 2. Stability Score (25%) - Low variance in latency
+    avg_lat = state.avg_latency
+    if len(state.latency_history) > 1:
+        variance = sum((x - avg_lat) ** 2 for x in state.latency_history) / len(state.latency_history)
+        # 0.99 if variance is 0, drops off. 100ms standard deviation is 10000 variance.
+        stability_score = max(0.01, 0.99 - math.sqrt(variance) / 200.0)
     else:
-        efficiency_score = 0.0
+        stability_score = 0.99
 
-    return latency_score + efficiency_score
+    # 3. Cost Score (20%) - Minimize servers (MAX_SERVERS=50, MIN_SERVERS=1)
+    avg_servers = sum(state.server_history) / len(state.server_history)
+    # 0.99 if 1 server, 0.01 if 50 servers
+    cost_score = max(0.01, 0.99 - (avg_servers - 1) / 49)
+
+    # 4. Smoothness Score (15%) - Low action oscillation
+    # action_history contains 0:hold, 1:add, 2:remove
+    changes = 0
+    for i in range(1, len(state.action_history)):
+        if state.action_history[i] != state.action_history[i-1] and state.action_history[i] != 0:
+            changes += 1
+    # 0.99 if 0 changes, 0.01 if 25 changes (every other step)
+    smoothness_score = max(0.01, 0.99 - (changes / 25.0))
+
+    # Weighted Sum
+    raw = (0.40 * util_score + 
+           0.25 * stability_score + 
+           0.20 * cost_score + 
+           0.15 * smoothness_score)
+
+    return raw
 
 def grade_task_easy(state) -> float:
     """Grader for the easy auto-scaling task."""

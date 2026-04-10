@@ -156,6 +156,11 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             total_reward=0.1,
             peak_traffic=traffic,
             avg_latency=latency,
+            latency_history=[latency],
+            action_history=[],
+            utilization_history=[utilization],
+            server_history=[self._active_servers],
+            step_rewards=[0.1],
         )
 
         return ScalerObservation(
@@ -194,6 +199,13 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
         self._state.total_reward += float(reward)
         self._state.peak_traffic = max(self._state.peak_traffic, traffic)
         
+        # history tracking for weighted rubric
+        self._state.latency_history.append(latency)
+        self._state.action_history.append(action.action)
+        self._state.utilization_history.append(utilization)
+        self._state.server_history.append(self._active_servers)
+        self._state.step_rewards.append(float(reward))
+
         # running average
         self._state.avg_latency = (
             (self._state.avg_latency * (self._step_count - 1) + latency)
@@ -239,7 +251,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
 
     @property
     def episode_return(self) -> float:
-        return round(self._state.total_reward, 2) if self._state else 0.0
+        return float(safe_score(self._state.total_reward)) if self._state else 0.01
 
 class CodeReviewEnvironment:
     """
