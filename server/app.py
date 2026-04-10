@@ -12,7 +12,7 @@ import sys
 from typing import Union, Any
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from pydantic import BaseModel
@@ -22,7 +22,7 @@ from models import EnvInfo, ResetResult, ScalerAction, ScalerObservation, StepRe
 from server.environment import CloudAutoScalerEnvironment, CodeReviewEnvironment
 from server.tasks import grade_task
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", stream=sys.stderr)
 log = logging.getLogger("cloud-autoscaler")
 
 _env_instance = None
@@ -109,7 +109,7 @@ async def reset(req: ResetRequest = None):
 async def step(action: Union[ScalerAction, CodeReviewAction, Any]):
     global _env_instance
     if _env_instance is None:
-        return {"error": "Call /reset first"}
+        raise HTTPException(status_code=400, detail="Call /reset first")
         
     obs, reward, done, info = _env_instance.step(action)
     

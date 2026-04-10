@@ -9,14 +9,14 @@ Environment variables:
 
 Stdout format:
     [START]   task=<name> env=whydiditfail model=<model>          (per episode)
-    [STEP]    step=<n> action=<action_type> reward=<float> done=<bool> error=<null|msg>
-    [END]     success=<bool> steps=<n> reward=<float>             (per episode)
-    [END]     score=<float>                                        (final overall)
+    [STEP]    step=<n> action=<action_type> rewards=<float> done=<bool> error=<null|msg>
+    [END]     success=<bool> steps=<n> rewards=<float>             (per episode)
 
-All reward and score values are strictly in (0.001, 0.999).
+All reward and score values are strictly in (0.01, 0.99).
 """
 
 import asyncio
+import sys
 import json
 import os
 import textwrap
@@ -208,10 +208,10 @@ async def run_episode(
             try:
                 result = await env.step(action)
             except ConnectionClosedError as e:
-                print(f"[STEP] step={step} action={action.action_type} reward=0.10 done=true error={e}", flush=True)
+                print(f"[STEP] step={step} action={action.action_type} rewards=0.10 done=true error={e}", flush=True)
                 break
             obs    = result.observation
-            reward = round(max(0.001, min(0.999, result.reward or 0.001)), 3)
+            reward = round(max(0.01, min(0.99, result.reward or 0.01)), 3)
             done   = result.done
 
             if action.action_type in ("inspect_logs", "inspect_config", "inspect_gradients"):
@@ -225,11 +225,11 @@ async def run_episode(
             rewards.append(reward)
             data_seen = json.dumps(obs.visible_data) if obs.visible_data else "{}"
             history.append(
-                f"Step {step}: {action.action_type} → reward={reward:.2f} | {obs.feedback}\n"
+                f"Step {step}: {action.action_type} → rewards={reward:.2f} | {obs.feedback}\n"
                 f"  Data: {data_seen}"
             )
             print(
-                f"[STEP] step={step} action={action.action_type} reward={reward:.2f} "
+                f"[STEP] step={step} action={action.action_type} rewards={reward:.2f} "
                 f"done={str(done).lower()} error=null",
                 flush=True,
             )
@@ -238,7 +238,7 @@ async def run_episode(
                 break
 
         # WebSocket is closed — safe to call the judge now
-        keyword_score = max(0.001, min(0.999, rewards[-1])) if rewards else 0.001
+        keyword_score = max(0.01, min(0.99, rewards[-1])) if rewards else 0.01
         judge_score: float | None = None
         if submit_action is not None:
             judge_score = llm_judge(
@@ -251,18 +251,18 @@ async def run_episode(
                 inspection_order=inspection_order,
             )
         if judge_score is None:
-            score = round(max(0.001, min(0.999, keyword_score)), 3)
+            score = round(max(0.01, min(0.99, keyword_score)), 3)
         else:
-            score = round(max(0.001, min(0.999, 0.85 * keyword_score + 0.15 * judge_score)), 3)
+            score = round(max(0.01, min(0.99, 0.85 * keyword_score + 0.15 * judge_score)), 3)
 
         success = score >= SUCCESS_THRESHOLD
 
     finally:
         steps_taken = len(rewards)
-        final_reward = rewards[-1] if rewards else 0.001
-        # [END] per-episode: reward=<float> (singular, as per spec)
+        final_reward = rewards[-1] if rewards else 0.01
+        # [END] per-episode: rewards=<float> (singular, as per spec)
         print(
-            f"[END] success={str(success).lower()} steps={steps_taken} reward={final_reward:.2f}",
+            f"[END] success={str(success).lower()} steps={steps_taken} rewards={final_reward:.2f}",
             flush=True,
         )
 
@@ -308,8 +308,8 @@ async def main() -> None:
         scores += await run_task("task_hard",   HARD_SCENARIOS,   env, client)
 
         # [END] final overall score — singular, per spec
-        overall = round(max(0.001, min(0.999, sum(scores) / len(scores))), 3) if scores else 0.001
-        print(f"[END] score={overall:.3f}", flush=True)
+        overall = round(max(0.01, min(0.99, sum(scores) / len(scores))), 3) if scores else 0.01
+        print(f"[INFO] overall_score={overall:.2f}", file=sys.stderr)
     finally:
         try:
             await env.close()
@@ -319,3 +319,4 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+

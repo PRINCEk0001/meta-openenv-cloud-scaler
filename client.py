@@ -8,6 +8,7 @@ import asyncio
 import logging
 import httpx
 import json
+import sys
 
 from models import (
     ScalerAction, ScalerObservation, ResetResult, StepResult,
@@ -15,7 +16,7 @@ from models import (
 )
 
 log = logging.getLogger("openenv-client")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", stream=sys.stderr)
 
 try:
     from openenv.core.client import EnvClient as _EnvClient  # type: ignore
