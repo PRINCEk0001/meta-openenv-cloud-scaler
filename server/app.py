@@ -26,8 +26,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("cloud-autoscaler")
 
 def safe_score(raw):
-    """Implement the strict [0.01, 0.99] safety clamp and 2dp formatting."""
-    clamped = max(0.01, min(0.99, float(raw or 0.01)))
+    """Implement the strict (0.001, 0.999) safety clamp and 2dp formatting.
+    Ensures values like 0.0 or 1.0 are never returned.
+    """
+    try:
+        val = float(raw if raw is not None else 0.01)
+    except (ValueError, TypeError):
+        val = 0.01
+    clamped = max(0.01, min(0.99, val))
     return f"{clamped:.2f}"
 
 _env_instance = None
@@ -115,12 +121,13 @@ async def step(action: Union[ScalerAction, CodeReviewAction, Any]):
         
     obs, reward, done, info = _env_instance.step(action)
     
-    # [STEP] Mandatory Phase 1 log
-    # Using 2dp formatting and plural rewards=
+    # [STEP] Mandatory Phase 1 log - Strict Clamp
     action_val = getattr(action, "action", 0)
-    print(f"[STEP] step={_env_instance._step_count} action={{\"action\":{action_val}}} rewards={reward:+.2f} done={'true' if done else 'false'} error=null", flush=True)
+    # Ensure even step rewards are clamped away from 0.0/1.0
+    s_reward = float(safe_score(reward))
+    print(f"[STEP] step={_env_instance._step_count} action={{\"action\":{action_val}}} rewards={s_reward:.2f} done={'true' if done else 'false'} error=null", flush=True)
     
-    return StepResult(observation=obs, reward=reward, done=done, info=info)
+    return StepResult(observation=obs, reward=s_reward, done=done, info=info)
     
 
 @app.post("/grader", response_model=GraderResponse)
@@ -136,10 +143,10 @@ async def grader(req: GraderRequest):
         
         is_success = bool(float(score_str) >= 0.5)
         
-        # [END] Mandatory Phase 1 log
-        # Extract rewards list from state if available
+        # [END] Mandatory Phase 1 log - Strict Clamp every reward in the list
         rewards_list = getattr(_env_instance._state, "step_rewards", [])
-        r_str = ",".join(f"{float(r):.2f}" for r in rewards_list) if rewards_list else "0.01"
+        # Apply safe_score to EVERY item in the join to prevent 0.00/1.00 in the list
+        r_str = ",".join(safe_score(r) for r in rewards_list) if rewards_list else "0.01"
         print(f"[END] success={'true' if is_success else 'false'} steps={len(rewards_list)} rewards={r_str}", flush=True)
 
         log.info(f"Grading ({req.task}) -> Raw={raw_score:.4f}, Final={score_str}, success={is_success}")

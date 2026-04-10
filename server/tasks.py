@@ -6,8 +6,14 @@ Ensures all scores are strictly within (0.001, 0.999).
 import math
 
 def safe_score(raw):
-    """Implement the strict [0.01, 0.99] safety clamp and 2dp formatting."""
-    clamped = max(0.01, min(0.99, float(raw or 0.01)))
+    """Implement the strict (0.01, 0.99) safety clamp and 2dp formatting.
+    Ensures values like 0.0 or 1.0 are never returned.
+    """
+    try:
+        val = float(raw if raw is not None else 0.01)
+    except (ValueError, TypeError):
+        val = 0.01
+    clamped = max(0.01, min(0.99, val))
     return f"{clamped:.2f}"
 
 def normalize_score(raw_score: float) -> float:
