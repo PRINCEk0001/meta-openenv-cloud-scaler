@@ -124,13 +124,13 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
 
         raw = base_score - efficiency_penalty
 
-        score = max(0.001, min(0.999, float(raw)))
-        score = round(score, 3)
+        score = max(0.01, min(0.99, float(raw)))
+        score = round(score, 2)
 
         if score >= 1.0:
-            score = 0.999
+            score = 0.99
         if score <= 0.0:
-            score = 0.001
+            score = 0.01
 
         return float(score)
 
@@ -221,7 +221,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             "peak_traffic": round(self._state.peak_traffic, 2),
         }
 
-        return obs, round(reward, 3), self._done, info
+        return obs, round(reward, 2), self._done, info
 
     @property
     def current_step(self) -> int:
@@ -237,7 +237,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
 
     @property
     def episode_return(self) -> float:
-        return round(self._state.total_reward, 4) if self._state else 0.0
+        return round(self._state.total_reward, 2) if self._state else 0.0
 
 class CodeReviewEnvironment:
     """

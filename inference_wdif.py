@@ -10,9 +10,7 @@ Environment variables:
 Stdout format:
     [START]   task=<name> env=whydiditfail model=<model>          (per episode)
     [STEP]    step=<n> action=<action_type> rewards=<float> done=<bool> error=<null|msg>
-    [END]     success=<bool> steps=<n> rewards=<float>             (per episode)
-
-All reward and score values are strictly in (0.01, 0.99).
+    [END]     success=<bool> steps=<n> rewards=<float,float,...>  (per episode)
 """
 
 import asyncio
@@ -193,10 +191,9 @@ async def run_episode(
 
     obs      = result.observation
     history: List[str] = []
-    rewards: List[float] = []
+    rewards: List[str] = []
     inspection_order: List[str] = []
     submit_action: WhyDidItFailAction | None = None
-    score    = 0.10
     success  = False
 
     try:
@@ -210,10 +207,12 @@ async def run_episode(
             except ConnectionClosedError as e:
                 print(f"[STEP] step={step} action={action.action_type} rewards=0.10 done=true error={e}", flush=True)
                 break
-            obs    = result.observation
-            reward = round(max(0.01, min(0.99, result.reward or 0.01)), 3)
+            
+            reward_val = float(result.reward or 0.01)
+            reward_str = f"{max(0.01, min(0.99, reward_val)):.2f}"
             done   = result.done
-
+            rewards.append(reward_str)
+            
             if action.action_type in ("inspect_logs", "inspect_config", "inspect_gradients"):
                 source = action.action_type.replace("inspect_", "")
                 if source not in inspection_order:
@@ -222,14 +221,13 @@ async def run_episode(
             if action.action_type == "submit_diagnosis":
                 submit_action = action  # judge runs after loop — WebSocket is closed by then
 
-            rewards.append(reward)
             data_seen = json.dumps(obs.visible_data) if obs.visible_data else "{}"
             history.append(
-                f"Step {step}: {action.action_type} → rewards={reward:.2f} | {obs.feedback}\n"
+                f"Step {step}: {action.action_type} → rewards={reward_str} | {obs.feedback}\n"
                 f"  Data: {data_seen}"
             )
             print(
-                f"[STEP] step={step} action={action.action_type} rewards={reward:.2f} "
+                f"[STEP] step={step} action={action.action_type} rewards={reward_str} "
                 f"done={str(done).lower()} error=null",
                 flush=True,
             )
@@ -238,7 +236,7 @@ async def run_episode(
                 break
 
         # WebSocket is closed — safe to call the judge now
-        keyword_score = max(0.01, min(0.99, rewards[-1])) if rewards else 0.01
+        keyword_score = float(rewards[-1]) if rewards else 0.01
         judge_score: float | None = None
         if submit_action is not None:
             judge_score = llm_judge(
@@ -251,22 +249,23 @@ async def run_episode(
                 inspection_order=inspection_order,
             )
         if judge_score is None:
-            score = round(max(0.01, min(0.99, keyword_score)), 3)
+            score_val = max(0.01, min(0.99, keyword_score))
         else:
-            score = round(max(0.01, min(0.99, 0.85 * keyword_score + 0.15 * judge_score)), 3)
-
-        success = score >= SUCCESS_THRESHOLD
+            score_val = max(0.01, min(0.99, 0.85 * keyword_score + 0.15 * judge_score))
+        
+        score_str = f"{score_val:.2f}"
+        success = score_val >= SUCCESS_THRESHOLD
 
     finally:
         steps_taken = len(rewards)
-        final_reward = rewards[-1] if rewards else 0.01
-        # [END] per-episode: rewards=<float> (singular, as per spec)
+        # Comma-separated list from our rewards list
+        r_list_str = ",".join(rewards) if rewards else "0.01"
         print(
-            f"[END] success={str(success).lower()} steps={steps_taken} rewards={final_reward:.2f}",
+            f"[END] success={str(success).lower()} steps={steps_taken} rewards={r_list_str}",
             flush=True,
         )
 
-    return {"scenario_key": scenario_key, "score": score, "steps": steps_taken, "success": success}, env
+    return {"scenario_key": scenario_key, "score": float(score_str), "steps": steps_taken, "success": success}, env
 
 
 async def run_task(
@@ -293,7 +292,6 @@ async def run_task(
         results.append(res)
 
     scores     = [r["score"] for r in results]
-    task_score = round(max(0.10, min(0.90, sum(scores) / len(scores))), 2) if scores else 0.10
     return scores
 
 
@@ -307,9 +305,10 @@ async def main() -> None:
         scores += await run_task("task_medium", MEDIUM_SCENARIOS, env, client)
         scores += await run_task("task_hard",   HARD_SCENARIOS,   env, client)
 
-        # [END] final overall score — singular, per spec
-        overall = round(max(0.01, min(0.99, sum(scores) / len(scores))), 3) if scores else 0.01
-        print(f"[INFO] overall_score={overall:.2f}", file=sys.stderr)
+        # Removed [END] score line as it is not in the spec
+        avg_score = sum(scores) / len(scores) if scores else 0.01
+        overall_str = f"{max(0.01, min(0.99, avg_score)):.2f}"
+        print(f"[INFO] overall_score={overall_str}", file=sys.stderr, flush=True)
     finally:
         try:
             await env.close()

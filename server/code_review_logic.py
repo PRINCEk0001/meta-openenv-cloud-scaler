@@ -6,14 +6,14 @@ import math
 from typing import List
 
 def clamp_ultra_strict(score: float) -> float:
-    """Implement the [0.001, 0.999] ultra-strict safety clamp."""
-    s = max(0.001, min(0.999, float(score)))
-    s = round(s, 3)
+    """Implement the [0.01, 0.99] ultra-strict safety clamp."""
+    s = max(0.01, min(0.99, float(score)))
+    s = round(s, 2)
 
     if s >= 1.0:
-        s = 0.999
+        s = 0.99
     if s <= 0.0:
-        s = 0.001
+        s = 0.01
 
     return float(s)
 

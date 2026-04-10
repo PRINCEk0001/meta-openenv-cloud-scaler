@@ -114,7 +114,7 @@ async def step(action: Union[ScalerAction, CodeReviewAction, Any]):
     obs, reward, done, info = _env_instance.step(action)
     
     # Generic logging
-    log.info(f"step={getattr(obs, 'step_number', '?')} reward={reward:+.3f} done={done}")
+    log.info(f"step={getattr(obs, 'step_number', '?')} reward={reward:+.2f} done={done}")
     
     return StepResult(observation=obs, reward=reward, done=done, info=info)
     
@@ -129,15 +129,15 @@ async def grader(req: GraderRequest):
         
         raw_score = grade_task(req.task, _env_instance._state)
         
-        # Ultra-strict clamp as suggested by user, now with [0.001, 0.999] bounds
+        # Ultra-strict clamp as suggested by user, now with [0.01, 0.99] bounds
         score = float(raw_score)
-        score = max(0.001, min(0.999, score))
-        score = round(score, 3)
+        score = max(0.01, min(0.99, score))
+        score = round(score, 2)
             
         if score >= 1.0:
-            score = 0.999
+            score = 0.99
         if score <= 0.0:
-            score = 0.001
+            score = 0.01
 
         is_success = bool(score >= 0.5)
         log.info(f"Grading ({req.task}) -> Raw={raw_score:.4f}, Final={score:.2f}, success={is_success}")

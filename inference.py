@@ -128,7 +128,7 @@ def run_task(env, task_name: str):
                 # Bug Fix 4: Support truncated
                 truncated = getattr(res, "truncated", False)
             except Exception as ex:
-                reward = 0.00
+                reward = 0.01
                 done = True
                 err = str(ex).replace("\n", " ")
 

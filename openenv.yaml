@@ -46,10 +46,10 @@ environment:
       range: [0.0, 100.0]
 
   reward:
-    range: [0.001, 0.999]
+    range: [0.01, 0.99]
     components:
       - name: normalized_score
-        value: "[0.001, 0.999]"
+        value: "[0.01, 0.99]"
         condition: always
 
 endpoints:

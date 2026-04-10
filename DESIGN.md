@@ -13,11 +13,11 @@ To keep numbers whole and easy to watch, I pinned capacity at 25 req/s per serve
 I start the simulation with 10 servers active. Since the baseline traffic generally sits around 250 requests at step 0, starting with 10 gives the agent 100% exact capacity (250 / (10 * 25) = 1.0 utilization). It forces an immediate reaction.
 
 ### 4. Reward Shaping
-I wanted to build an objective that actually mimics modern SLA constraints while strictly adhering to Meta's (0.001, 0.999) scoring range:
+I wanted to build an objective that actually mimics modern SLA constraints while strictly adhering to Meta's (0.01, 0.99) scoring range:
 - You get ~0.97 for keeping latency sub-50ms (Optimal).
 - You get ~0.60 for sub-150ms and ~0.30 for sub-500ms.
 - Efficiency penalty: Up to -0.20 based on server count to penalize over-provisioning.
-- Outage protection: Instead of a massive negative penalty, we floor the score at 0.001 to avoid validation failures while still highlighting poor performance.
+- Outage protection: Instead of a massive negative penalty, we floor the score at 0.01 to avoid validation failures while still highlighting poor performance.
 
 The agent maximizes its return by finding the minimum server count that keeps latency within the high-reward window (<50ms).
 

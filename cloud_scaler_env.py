@@ -49,17 +49,13 @@ class CloudScalerEnv(gym.Env):
         0.97  — latency < 50 ms  (excellent)
         0.60  — latency < 150 ms (degraded)
         0.30  — latency < 500 ms (bad)
-        0.001 — latency >= 500ms (critical outage, base before penalty)
+        0.01 — latency >= 500ms (critical outage, base before penalty)
         efficiency_penalty: up to -0.20 for over-provisioning
-        hard clamp: max(0.001, min(0.999, raw))
-
-    Episode ends:
-        terminated = False (no natural terminal state in this env)
-        truncated  = True  after MAX_STEPS (200) steps
+        hard clamp: max(0.01, min(0.99, raw))
     """
 
     metadata = {"render_modes": []}
-    reward_range = (0.001, 0.999)
+    reward_range = (0.01, 0.99)
 
     def __init__(self, task: str = "autoscaling_easy", render_mode=None):
         super().__init__()
@@ -127,10 +123,10 @@ class CloudScalerEnv(gym.Env):
         • latency < 50 ms  → base = 0.97  (excellent)
         • latency < 150 ms → base = 0.60  (degraded)
         • latency < 500 ms → base = 0.30  (bad)
-        • latency >= 500ms → base = 0.001 (critical outage)
+        • latency >= 500ms → base = 0.01 (critical outage)
 
         efficiency_penalty: (servers / MAX_SERVERS) * 0.20
-        Hard clamp: max(0.001, min(0.999, raw))
+        Hard clamp: max(0.01, min(0.99, raw))
         """
         if latency >= 500.0:
             # Critical outage — very low score but strictly > 0
@@ -151,13 +147,13 @@ class CloudScalerEnv(gym.Env):
 
         raw = base_score - efficiency_penalty
 
-        score = max(0.001, min(0.999, float(raw)))
-        score = round(score, 3)
+        score = max(0.01, min(0.99, float(raw)))
+        score = round(score, 2)
 
         if score >= 1.0:
-            score = 0.999
+            score = 0.99
         if score <= 0.0:
-            score = 0.001
+            score = 0.01
 
         return float(score)
 
@@ -253,7 +249,7 @@ class CloudScalerEnv(gym.Env):
             "total_reward"   : float(self._total_reward),
         }
 
-        return obs, float(reward), terminated, truncated, info
+        return obs, round(float(reward), 2), terminated, truncated, info
 
     def render(self):
         """Text render for debugging."""

@@ -6,18 +6,18 @@ Ensures all scores are strictly within (0.001, 0.999).
 import math
 
 def normalize_score(raw_score: float) -> float:
-    """Clamp score strictly away from (0, 1) boundaries using [0.001, 0.999]."""
+    """Clamp score strictly away from (0, 1) boundaries using [0.01, 0.99]."""
     if raw_score is None or math.isnan(raw_score) or math.isinf(raw_score):
         return 0.1
     
-    # Use 3 decimal precision for 0.001 bounds
-    score = max(0.001, min(0.999, float(raw_score)))
-    score = round(score, 3)
+    # Use 2 decimal precision for 0.01 bounds
+    score = max(0.01, min(0.99, float(raw_score)))
+    score = round(score, 2)
 
     if score >= 1.0:
-        score = 0.999
+        score = 0.99
     if score <= 0.0:
-        score = 0.001
+        score = 0.01
 
     return float(score)
 

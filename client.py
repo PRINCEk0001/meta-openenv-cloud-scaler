@@ -124,7 +124,7 @@ def _run_sync(host: str, n_steps: int):
             
             log.info(
                 f"step={obs.step_number} | action={action.action} servers={obs.active_servers} "
-                f"util={obs.utilization:.2f} latency={obs.latency_ms:.0f}ms reward={result.reward:+.3f}"
+                f"util={obs.utilization:.2f} latency={obs.latency_ms:.0f}ms reward={result.reward:+.2f}"
             )
             if result.done:
                 break
