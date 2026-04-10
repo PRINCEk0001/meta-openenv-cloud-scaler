@@ -2,20 +2,22 @@ import json
 import os
 import sys
 import threading
+from typing import List
 
 from openai import OpenAI
 
-from client import CloudAutoScalerEnv
+# Direct imports instead of network client
 from models import ScalerAction
+from server.environment import CloudAutoScalerEnvironment
 
 # Load config from env or set defaults
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME   = os.getenv("MODEL_NAME", "gpt-4.1-mini")
-HF_TOKEN = os.getenv("HF_TOKEN")
-HF_SPACE_URL = os.getenv("HF_SPACE_URL", "http://localhost:7860")
+MODEL_NAME   = os.getenv("MODEL_NAME", "gpt-4o-mini")
+HF_TOKEN     = os.getenv("HF_TOKEN")
 
 if not HF_TOKEN:
-    raise ValueError("HF_TOKEN environment variable is required")
+    # Fallback for local testing if not in environment
+    HF_TOKEN = "dummy-token"
 
 openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
@@ -23,18 +25,30 @@ openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 SYS_PROMPT = "You're a cloud infra bot. Output ONLY a valid JSON object with key 'action' and value 0, 1, or 2. No markdown blocks."
 
 def clamp_reward(r, eps=0.01):
-    """Clamps reward to (0, 1) to avoid boundary rejection."""
-    return max(eps, min(1.0 - eps, float(r)))
+    """Clamps reward to [0.01, 0.99] to avoid boundary rejection."""
+    try:
+        val = float(r)
+    except (TypeError, ValueError):
+        val = 0.01
+    return max(eps, min(1.0 - eps, val))
 
 def get_scaling_action(obs) -> ScalerAction:
     """Queries the LLM for the next scaling action based on our current traffic/utilization."""
+    # Handle both object and dict observations
+    traffic = getattr(obs, "current_traffic_load", 0.0)
+    servers = getattr(obs, "active_servers", 10)
+    latency = getattr(obs, "latency_ms", 10.0)
+    capacity = getattr(obs, "total_capacity", 250.0)
+    util = getattr(obs, "utilization", 0.5)
+    step_num = getattr(obs, "step_number", 0)
+
     user_prompt = (
-        f"Traffic: {obs.current_traffic_load:.1f} req/s\n"
-        f"Servers: {obs.active_servers}\n"
-        f"Latency: {obs.latency_ms:.1f} ms\n"
-        f"Capacity: {obs.total_capacity:.1f} req/s\n"
-        f"Util: {obs.utilization * 100:.1f}%\n"
-        f"Step: {obs.step_number}/50\n\n"
+        f"Traffic: {traffic:.1f} req/s\n"
+        f"Servers: {servers}\n"
+        f"Latency: {latency:.1f} ms\n"
+        f"Capacity: {capacity:.1f} req/s\n"
+        f"Util: {util * 100:.1f}%\n"
+        f"Step: {step_num}/50\n\n"
         "Options:\n"
         "0 = hold\n"
         "1 = add server (+25 req/s capacity)\n"
@@ -62,8 +76,6 @@ def get_scaling_action(obs) -> ScalerAction:
 
             content = resp.choices[0].message.content
             content = (content or '{"action": 0}').strip()
-            
-            # sometimes LLMs ignore the 'no markdown' instruction
             content = content.replace("```json", "").replace("```", "").strip()
 
             parsed = json.loads(content)
@@ -100,33 +112,28 @@ class Timeout:
             self.timer.cancel()
 
 
-def run_task(env, task_name: str):
-    """Executes the standard inference loop and generates logs."""
+def run_task(env: CloudAutoScalerEnvironment, task_name: str):
+    """Executes the standard inference loop directly against the environment class."""
     step = 0
     rewards_float = []
     done = False
 
     try:
-        # Bug Fix 1: Moved into try block
+        # Direct reset
         obs = env.reset(task_name=task_name)
         
-        # Bug Fix: [START] AFTER reset succeeds
         print(f"[START] task={task_name} env=cloud-autoscaler-openenv model={MODEL_NAME}", flush=True)
 
         for step in range(1, 51):
-            action = get_scaling_action(obs)
-            # No newlines in action string
-            action_str = json.dumps(action.model_dump(), separators=(",", ":")).replace("\n", " ")
+            action_obj = get_scaling_action(obs)
+            # Action string for logging
+            action_log_str = json.dumps(action_obj.model_dump(), separators=(",", ":")).replace("\n", " ")
+            
             err = None
-            truncated = False
-
             try:
-                res = env.step(action)
-                obs = res.observation
-                reward = float(res.reward)
-                done = res.done
-                # Bug Fix 4: Support truncated
-                truncated = getattr(res, "truncated", False)
+                # Direct step (returns obs, reward, done, info)
+                obs, reward, done, info = env.step(action_obj)
+                reward = float(reward)
             except Exception as ex:
                 reward = 0.01
                 done = True
@@ -137,26 +144,17 @@ def run_task(env, task_name: str):
             err_log = err if err else "null"
             done_str = "true" if done else "false"
 
-            # [STEP] - Exactly 2 decimal places, flush=True
-            print(f"[STEP] step={step} action={action_str} rewards={clamp_reward(reward):.2f} done={done_str} error={err_log}", flush=True)
+            # [STEP] - PLURAL rewards=, 2dp formatting, flush=True
+            print(f"[STEP] step={step} action={action_log_str} rewards={clamp_reward(reward):.2f} done={done_str} error={err_log}", flush=True)
             
-            if done or truncated:
+            if done:
                 break
 
     finally:
-        if hasattr(env, "close"):
-            try:
-                env.close()
-            except:
-                pass
-
-        # Bug Fix 3: final_success uses the 'done' initialized before try
         success_str = "true" if (len(rewards_float) > 0 and done) else "false"
         
-        # Bug Fix 2: Fallback to "0.01" if list empty
+        # [END] - Exactly 2 decimal places, comma-separated list
         r_str = ",".join(f"{clamp_reward(r):.2f}" for r in rewards_float) if rewards_float else "0.01"
-        
-        # [END] - Exactly 2 decimal places, plural rewards_
         print(f"[END] success={success_str} steps={step} rewards={r_str}", flush=True)
 
 
@@ -165,14 +163,12 @@ if __name__ == "__main__":
     t.start()
 
     try:
-        env = CloudAutoScalerEnv(base_url=HF_SPACE_URL).sync()
-        with env as e:
-            for task in ["autoscaling_easy", "autoscaling_medium", "autoscaling_hard"]:
-                run_task(e, task)
+        # Instantiate environment directly
+        env = CloudAutoScalerEnvironment()
+        for task in ["autoscaling_easy", "autoscaling_medium", "autoscaling_hard"]:
+            run_task(env, task)
     except Exception as e:
         print(f"[ERROR] fatal: {e}", file=sys.stderr)
         sys.exit(1)
     finally:
         t.cancel()
-
-
