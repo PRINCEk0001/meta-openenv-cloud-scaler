@@ -99,7 +99,7 @@ async def reset(req: ResetRequest = None):
     ep_id = getattr(_env_instance._state, "episode_id", "unknown")
     
     # [START] Mandatory Phase 1 log
-    print(f"[START] task={task_name} env=cloud-autoscaler-openenv model={os.getenv('MODEL_NAME', 'meta-llama/Llama-3.1-8B-Instruct')}", flush=True)
+    print(f"[START] task={task_name} env=cloud-autoscaler-openenv model={os.getenv('MODEL_NAME', 'llama-3.1-8b-instant')}", flush=True)
         
     return ResetResult(observation=obs, info={"episode_id": ep_id})
 

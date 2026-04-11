@@ -5,6 +5,7 @@ Connects to the FastAPI server and provides a standard RL interface.
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
+from server.utils import safe_score
 
 class CodeReviewEnv(gym.Env):
     """
@@ -54,4 +55,4 @@ class CodeReviewEnv(gym.Env):
             "file_content_hash": np.array([0.5], dtype=np.float32)
         }
         
-        return obs, float(reward), False, done, {"step_reward": reward}
+        return obs, float(safe_score(reward)), False, done, {"step_reward": reward}

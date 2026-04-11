@@ -79,7 +79,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
 
     def _calculate_latency(self, traffic: float, servers: int) -> float:
         if servers == 0:
-            return 1000.0  # instant crash if no servers left
+            return 2000.0  # instant crash if no servers left
 
         capacity = servers * SERVER_CAPACITY
         utilization = traffic / capacity
