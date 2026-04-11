@@ -27,7 +27,6 @@ MAX_STEPS        = 50      # truncated after this many steps (matches openenv.ya
 # Obs-space bounds  [traffic,  servers,  latency_ms]
 OBS_LOW  = np.array([   0.0,       1.0,        0.0], dtype=np.float32)
 OBS_HIGH = np.array([1000.0,      50.0,     2000.0], dtype=np.float32)
-# ─────────────────────────────────────────────────────────────────────────────
 
 
 class CloudScalerEnv(gym.Env):
@@ -119,17 +118,28 @@ class CloudScalerEnv(gym.Env):
     def _calculate_reward(self, latency: float, servers: int) -> float:
         """
         Step reward strictly in the open interval (0, 1) — never 0.0 or 1.0.
+        Base scores (before efficiency penalty):
+        • latency < 50 ms  → base = 0.97  (excellent)
+        • latency < 150 ms → base = 0.60  (degraded)
+        • latency < 500 ms → base = 0.30  (bad)
+        • latency >= 500ms → base = 0.01 (critical outage)
+        efficiency_penalty: (servers / MAX_SERVERS) * 0.20
+        Hard clamp: max(0.01, min(0.99, raw))
         """
         if latency >= 500.0:
+            # Critical outage — very low score but strictly > 0
             base_score = 0.05
             efficiency_penalty = 0.01
         elif latency < 50.0:
+            # Excellent performance
             base_score = 0.97
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
         elif latency < 150.0:
+            # Acceptable performance
             base_score = 0.60
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
         else:
+            # Poor performance (high latency, not yet crashing)
             base_score = 0.30
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
@@ -146,9 +156,16 @@ class CloudScalerEnv(gym.Env):
     # ── Gymnasium API ─────────────────────────────────────────────────────────
 
     def reset(self, *, seed=None, options=None):
+        """
+        Reset the environment to the initial state.
+        Returns
+        -------
+        obs  : np.ndarray  shape (3,)
+        info : dict        episode metadata
+        """
         super().reset(seed=seed)
 
-        self._active_servers = 10
+        self._active_servers = 10           # sensible warm-start
         self._step_count     = 0
         self._total_reward   = 0.1
         self._done           = False
@@ -168,6 +185,19 @@ class CloudScalerEnv(gym.Env):
         return obs, info
 
     def step(self, action: int):
+        """
+        Take one step in the environment.
+        Parameters
+        ----------
+        action : int  - 0 (hold), 1 (add server), 2 (remove server)
+        Returns
+        -------
+        obs        : np.ndarray  shape (3,)
+        reward     : float       in [-1.0, +1.0]
+        terminated : bool        always False (no natural terminal state)
+        truncated  : bool        True after MAX_STEPS steps
+        info       : dict        {is_success, latency_ms, active_servers, step_count, ...}
+        """
         if int(action) == 1:
             self._active_servers = min(self._active_servers + 1, MAX_SERVERS)
         elif int(action) == 2:
@@ -196,6 +226,7 @@ class CloudScalerEnv(gym.Env):
         return obs, float(safe_score(reward)), terminated, truncated, info
 
     def render(self):
+        """Text render for debugging."""
         print(
             f"[step={self._step_count:3d}] "
             f"servers={self._active_servers:2d} | "

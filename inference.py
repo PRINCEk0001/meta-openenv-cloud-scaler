@@ -21,6 +21,10 @@ openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN or "dummy-token")
 # Prompt engineering to get valid JSON out of the LLM
 SYS_PROMPT = "You're a cloud infra bot. Output ONLY a valid JSON object with key 'action' and value 0, 1, or 2. No markdown blocks."
 
+def clamp_reward(r, eps=0.01):
+    """Implement user requested clamp returning float."""
+    return max(eps, min(1.0 - eps, float(r)))
+
 def get_scaling_action(obs, last_action: int = 0) -> ScalerAction:
     """
     Implements a heuristic-driven policy as recommended in the reliability plan.
@@ -97,6 +101,7 @@ def run_task(env: CloudAutoScalerEnvironment, task_name: str):
             try:
                 # Direct step
                 res_obs, res_reward, done, info = env.step(action_obj)
+                # Use clamp_reward to ensure (0,1) boundaries
                 # Use centralized clamp_reward
                 reward = clamp_reward(res_reward)
                 obs = res_obs
