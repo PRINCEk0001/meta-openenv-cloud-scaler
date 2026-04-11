@@ -124,7 +124,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
         raw = base_score - efficiency_penalty
-        return safe_score(raw)
+        return clamp_reward(raw)
 
     def reset(self, task_name: str = "autoscaling_easy") -> ScalerObservation:
         self._task_name = task_name
@@ -150,7 +150,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             action_history=[],
             utilization_history=[utilization],
             server_history=[self._active_servers],
-            step_rewards=[0.1],
+            step_rewards=[0.10],
         )
 
         return ScalerObservation(
@@ -225,7 +225,7 @@ class CloudAutoScalerEnvironment(_BaseEnvironment):
             "peak_traffic": round(self._state.peak_traffic, 2),
         }
 
-        return obs, float(reward), self._done, info
+        return obs, float(safe_score(reward)), self._done, info
 
     @property
     def current_step(self) -> int:

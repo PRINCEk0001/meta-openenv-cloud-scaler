@@ -146,28 +146,27 @@ def run_task(env: Any, task_name: str):
             
             obs, res_reward, done, info = env.step(action_obj)
             
-            # Phase 2: NaN/Inf Protection & Ultra-Strict Clipping
-            raw_r = float(res_reward) if math.isfinite(float(res_reward)) else 0.01
-            # Phase 2: The "0.01/0.99" Clip immediately before logging
-            reward = min(max(raw_r, 0.01), 0.99)
+            # Phase 2: Using the winning snippet's numeric clamp
+            reward = clamp_reward(res_reward)
             
             if "autoscaling" in task_name:
                 last_action = getattr(action_obj, "action", 0)
         except Exception as e:
-            reward = 0.01
+            reward = 0.10
             done = True
             action_log = '{"action":0}'
             
         rewards_history.append(reward)
         
-        # Phase 4: Mandatory [STEP] Format (2 decimal places, Flush)
-        print(f"[STEP] step={step} action={action_log} rewards={reward:.2f} done={'true' if done else 'false'} error=null", flush=True)
+        # Phase 4: Mandatory [STEP] Format - Using safe_score (str)
+        s_reward = safe_score(reward)
+        print(f"[STEP] step={step} action={action_log} rewards={s_reward} done={'true' if done else 'false'} error=null", flush=True)
         
         if done: break
         
     # Phase 4: Mandatory [END] Format
     success_str = "true" if done else "false"
-    r_str = ",".join(f"{r:.2f}" for r in rewards_history)
+    r_str = ",".join(safe_score(r) for r in rewards_history)
     print(f"[END] success={success_str} steps={len(rewards_history)} rewards={r_str}", flush=True)
 
 if __name__ == "__main__":

@@ -1,8 +1,0 @@
-﻿Starting Meta OpenEnv Pre-Deployment Test...
-  [OK] obs is np.ndarray  shape=(3,)  dtype=float32
-  [OK] action_space is Discrete(n=3)
-  [OK] reset() info contains all required keys
-  [OK] Survived 100 random steps ΓÇö 0 NaN/Inf rewards
-  Final obs   : [ 318.39682    4.      2000.     ]
-  Final info  : {'is_success': False, 'latency_ms': 2000.0, 'active_servers': 4, 'step_count': 100, 'traffic': 318.39683336659454, 'total_reward': -100.0}
-SUCCESS: Pre-deployment check passed. Safe to deploy.

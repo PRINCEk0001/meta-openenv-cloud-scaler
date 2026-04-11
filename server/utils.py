@@ -1,34 +1,32 @@
 """
 Utility functions for scoring and clamping in the Cloud AutoScaler environment.
 Ensures consistency across inference, environment, and server logging.
-REQUIRED FOR PHASE 2: Absolute Bulletproof Clamping (Submission #26 Refined).
+MATCHES USER SUCCESS SNIPPET (Phase 2 Fixed).
 """
 
-import math
-
-def safe_score(value):
+def safe_score(raw) -> str:
     """
-    REQUIRED FOR PHASE 2:
-    Ensures scores are strictly > 0 and < 1.
-    This is the "Absolute Fix" for the Meta/Hugging Face hackathon validator.
+    Implement the strict (0.01, 0.99) safety clamp and 2dp formatting.
+    Ensures values like 0.0 or 1.0 are never returned, which is required
+    by the Meta OpenEnv automated evaluator.
+    Returns a string for logging/JSON.
     """
     try:
-        # Handle None/NaN/Inf
-        if value is None or not math.isfinite(float(value)):
-            return 0.01
-        
-        val = float(value)
-        
-        # Mandatory strict clipping for hackathon validator
-        if val >= 1.0:
-            return 0.99
-        if val <= 0.0:
-            return 0.01
-            
-        return val
-    except Exception:
-        return 0.01
+        val = float(raw if raw is not None else 0.01)
+    except (ValueError, TypeError):
+        val = 0.01
+    
+    # Strict clamping
+    clamped = max(0.01, min(0.99, val))
+    return f"{clamped:.2f}"
 
-def clamp_reward(reward):
-    """Alias for safe_score to maintain backward compatibility."""
-    return safe_score(reward)
+def clamp_reward(r, eps=0.01) -> float:
+    """
+    Returns the numeric clamped value as a float.
+    Useful for internal calculations before string formatting.
+    """
+    try:
+        val = float(r)
+    except (ValueError, TypeError):
+        val = eps
+    return max(eps, min(1.0 - eps, val))
