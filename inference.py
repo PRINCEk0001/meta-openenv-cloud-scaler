@@ -13,7 +13,6 @@ from openai import OpenAI
 
 from server.models import ScalerAction, CodeReviewAction
 from server.environment import CloudAutoScalerEnvironment, CodeReviewEnvironment
-from server.utils import safe_score, clamp_reward
 
 # ── BUG 3 FIX: read HF_TOKEN (not API_KEY) — validator injects HF_TOKEN ─────
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.groq.com/openai/v1")
@@ -25,19 +24,58 @@ if not HF_TOKEN:
 
 client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
-SYS_PROMPT_SCALER = (
-    "Role: You are an autonomous Cloud Infrastructure Controller.\n"
-    "Objective: Maintain server health by balancing traffic load and response latency.\n\n"
-    "Operational Thresholds:\n"
-    "- CRITICAL LOAD: If Utilization > 85% or Latency > 50ms -> Action 1 (Scale Up)\n"
-    "- UNDER-UTILIZED: If Utilization < 45% and Servers > 1 -> Action 2 (Scale Down)\n"
-    "- STABLE: Otherwise -> Action 0 (Hold)\n\n"
-    "Rules:\n"
-    "1. Respond ONLY with a valid JSON object.\n"
-    "2. JSON must contain exactly one key: 'action' (integer 0, 1, or 2).\n"
-    "3. No markdown, no commentary.\n\n"
-    "Schema: {\"action\": <int>}"
-)
+def safe_score(raw) -> str:
+    """Implement the strict [0.01, 0.99] safety clamp and 2dp formatting locally."""
+    try:
+        val = float(raw if raw is not None else 0.10)
+    except (ValueError, TypeError):
+        val = 0.10
+    clamped = max(0.01, min(0.99, val))
+    return f"{clamped:.2f}"
+
+def clamp_reward(r, eps=0.01) -> float:
+    """Numeric clamp returning float for internal history."""
+    try:
+        val = float(r)
+    except (ValueError, TypeError):
+        val = eps
+    return max(eps, min(1.0 - eps, val))
+
+SYS_PROMPT_SCALER = """
+You are Anigrevity, an autonomous Cloud Infrastructure Controller for Meta's OpenEnv.
+
+MISSION
+Keep latency <50ms while using the fewest servers possible. Episode = 50 steps. Each server = 25 req/s capacity.
+
+OBSERVATION FIELDS
+- current_traffic_load: float (req/s)
+- active_servers: int [1-50]
+- latency_ms: float
+- utilization: traffic / (servers*25)
+- step_number: int
+
+DECISION PROTOCOL (think silently, do not output reasoning):
+1. Calculate projected utilization after action
+2. CRITICAL: if utilization > 0.85 OR latency_ms > 50 → action=1 (SCALE UP)
+3. DANGER: if utilization > 0.75 AND latency_ms > 40 → action=1
+4. UNDER-UTILIZED: if utilization < 0.45 AND active_servers > 1 AND latency_ms < 30 → action=2 (SCALE DOWN)
+5. STABLE: if 0.60 ≤ utilization ≤ 0.75 AND latency_ms < 50 → action=0 (HOLD)
+6. ANTI-OSCILLATION: if last_action was 1 and utilization < 0.70 → prefer 0 over 2
+
+SCORING AWARENESS
+Meta grades 40% utilization closeness to 70%, 25% latency stability, 20% cost, 15% smoothness. Never flip-flop.
+
+OUTPUT RULES — VIOLATION = VALIDATION ERROR
+- Respond with EXACTLY one JSON object, no markdown, no text before/after
+- Schema: {"action": 0} or {"action": 1} or {"action": 2}
+- 0=hold, 1=add server, 2=remove server
+- Integer only, not string
+
+EXAMPLES
+obs: utilization=0.92, latency=68 → {"action": 1}
+obs: utilization=0.42, latency=22, servers=8 → {"action": 2}
+obs: utilization=0.68, latency=38 → {"action": 0}
+"""
 
 SYS_PROMPT_REVIEW = (
     "Role: You are an expert Software Security Auditor.\n"
@@ -116,7 +154,7 @@ class Timeout(threading.Thread):
 def run_task(env: Any, task_name: str):
     rewards_history = []
     last_action     = 0
-    done            = False   # initialised before try so finally can always read it
+    done            = False
     step            = 0
     max_steps       = 50 if "autoscaling" in task_name else 5
 
@@ -145,7 +183,6 @@ def run_task(env: Any, task_name: str):
                     res_reward = step_result.reward
                     done       = step_result.done
                 else:
-                    # fallback if env returns tuple (gym-style)
                     obs, res_reward, done, _ = step_result
 
                 reward = clamp_reward(res_reward)
@@ -162,7 +199,7 @@ def run_task(env: Any, task_name: str):
             rewards_history.append(reward)
             err_str  = err if err else "null"
 
-            # BUG 1 FIX: [STEP] uses reward= (SINGULAR) not rewards=
+            # BUG 1 FIX: [STEP] uses reward= (SINGULAR)
             print(
                 f"[STEP] step={step} action={action_log} "
                 f"reward={safe_score(reward)} "
@@ -175,11 +212,10 @@ def run_task(env: Any, task_name: str):
                 break
 
     finally:
-        # BUG 2 FIX: [END] inside finally — always fires even on exception
         success_str = "true" if (rewards_history and done) else "false"
         r_str = (
             ",".join(safe_score(r) for r in rewards_history)
-            if rewards_history else "0.01"
+            if rewards_history else "0.10"
         )
         print(
             f"[END] success={success_str} steps={step} rewards={r_str}",
