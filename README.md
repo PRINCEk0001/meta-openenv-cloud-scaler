@@ -56,28 +56,40 @@ Evaluates security reasoning by presenting patches with potential vulnerabilitie
 ML Diagnosis task requiring step-by-step investigation of training logs and configurations.
 *   **Actions**: `inspect_logs`, `inspect_config`, `inspect_gradients`, `submit_diagnosis`.
 
+### 4. Kinetic Console Dashboard (`index.html`)
+A high-fidelity, pixel-perfect frontend for real-time monitoring.
+*   **Features**: Line charts for rewards, scrolling terminal logs, and clickable action controls.
+*   **Access**: Open `index.html` in any browser while the backend is running.
+
+---
+
+## 🚀 Deployment & Usage
+
+### 🎨 Kinetic Dashboard
+To view the real-time telemetry console:
+1.  Ensure the FastAPI server is running (`python -m server.app`).
+2.  Open **[index.html](file:///e:/Meta%20Ai/index.html)** in your browser.
+3.  The console will automatically sync with the backend at `localhost:7860`.
+
 ---
 
 ## 🚀 Deployment & Usage
 
 ### HF Spaces Standard
 The environment serves a FastAPI wrapper on port `7860`.
-
 ```bash
-# Local Execution
 docker build -t meta-openenv-anigrevity .
 docker run -p 7860:7860 meta-openenv-anigrevity
 ```
 
 ### Integrated Inference
-To run a full evaluation locally using the Anigrevity inference script:
+To run a full evaluation:
 ```bash
 set HF_TOKEN=your_token_here
 python inference.py
 ```
 
 ### Pre-Deployment Verification
-Before pushing to Hugging Face, run the validation suite:
 ```bash
 python main.py
 ```

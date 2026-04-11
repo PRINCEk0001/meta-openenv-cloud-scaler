@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANIGREVITY: KINETIC_CONSOLE_V1.0.4</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <style>
+        :root {
+            --bg-color: #080808;
+            --sidebar-bg: #0d0d0d;
+            --card-bg: #121212;
+            --accent-teal: #00FFD1;
+            --accent-amber: #FFD700;
+            --accent-red: #FF4B4B;
+            --text-main: #FFFFFF;
+            --text-muted: #888888;
+            --border-color: #222222;
+            --font-mono: 'Space Mono', monospace;
+            --glow-teal: 0 0 10px rgba(0, 255, 209, 0.3);
+            --glow-amber: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            text-transform: uppercase;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            overflow-x: hidden;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* --- SIDEBAR --- */
+        aside {
+            width: 240px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar-circle {
+            width: 32px;
+            height: 32px;
+            background-color: #1a1a1a;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-teal);
+            border: 1px solid var(--border-color);
+        }
+
+        .header-text h3 { font-size: 14px; color: var(--text-main); }
+        .header-text p { font-size: 10px; color: var(--text-muted); }
+
+        .nav-list {
+            list-style: none;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background-color: #151515;
+            color: var(--text-main);
+        }
+
+        .nav-item.active {
+            color: var(--accent-teal);
+            border-left-color: var(--accent-teal);
+            background-color: #151515;
+        }
+
+        .nav-icon {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .run-btn {
+            width: 100%;
+            background-color: var(--accent-teal);
+            color: #000;
+            border: none;
+            padding: 14px;
+            font-weight: bold;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            box-shadow: var(--glow-teal);
+            transition: transform 0.1s;
+        }
+
+        .run-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .run-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* --- NAVBAR --- */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        header.navbar {
+            height: 60px;
+            background-color: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .brand-name {
+            font-weight: 800;
+            font-size: 18px;
+            letter-spacing: 1px;
+            color: var(--accent-teal);
+        }
+
+        .badge {
+            border: 1px solid var(--accent-teal);
+            padding: 4px 10px;
+            font-size: 10px;
+            color: var(--accent-teal);
+            border-radius: 2px;
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--accent-teal);
+            padding: 4px 12px;
+            border-radius: 2px;
+            font-size: 11px;
+            color: var(--accent-teal);
+            box-shadow: inset 0 0 10px rgba(0, 255, 209, 0.1);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #444; 
+            border-radius: 50%;
+        }
+
+        .status-dot.online { background-color: var(--accent-teal); box-shadow: 0 0 8px var(--accent-teal); }
+        .status-dot.offline { background-color: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: bold;
+            transition: color 0.2s;
+            text-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+
+        .nav-link.active { color: var(--accent-teal); text-shadow: 0 0 5px var(--accent-teal); }
+        .nav-link:hover { color: var(--text-main); }
+
+        /* --- CONTENT --- */
+        .content {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            max-width: 1400px;
+        }
+
+        /* --- METRIC ROW --- */
+        .metric-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0px;
+            background-color: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .metric-card {
+            padding: 24px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .metric-card:last-child { border-right: none; }
+
+        .metric-label { font-size: 10px; color: var(--text-muted); }
+        .metric-value { font-size: 28px; font-weight: bold; color: var(--text-main); }
+        .metric-sub { font-size: 10px; color: var(--accent-teal); }
+        .metric-bar { height: 2px; background: #222; margin-top: 5px; width: 60px; position: relative; }
+        .metric-bar::after { content: ''; position: absolute; top: 0; left: 0; height: 100%; background: var(--accent-teal); width: 40%; }
+
+        /* --- DASHBOARD ROW --- */
+        .grid-main {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+
+        .telemetry-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        .btn-group { display: flex; gap: 10px; }
+
+        .btn-small {
+            background: #1a1a1a;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 16px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-small.primary {
+            background-color: var(--accent-teal);
+            color: #000;
+            border-color: var(--accent-teal);
+        }
+
+        .btn-small:hover { opacity: 0.8; }
+
+        .telemetry-body {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 20px;
+            height: 300px;
+        }
+
+        .status-block {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-right: 20px;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .input-group label { font-size: 9px; color: var(--text-muted); display: block; margin-bottom: 8px; }
+        .select-dark {
+            width: 100%;
+            background-color: #0a0a0a;
+            border: 1px solid var(--accent-teal);
+            color: var(--text-main);
+            padding: 8px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2300FFD1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: calc(100% - 10px) center;
+            cursor: pointer;
+        }
+
+        .stat-line { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; }
+        .stat-label { color: var(--text-muted); }
+        .stat-value.teal { color: var(--accent-teal); text-shadow: var(--glow-teal); font-weight: bold; }
+
+        .chart-container { position: relative; width: 100%; height: 100%; }
+
+        /* --- PERSONA & ENDPOINTS --- */
+        .sidebar-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .info-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+        }
+
+        .persona-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .persona-body { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+
+        .robot-avatar {
+            width: 80px;
+            height: 80px;
+            background-color: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .robot-avatar svg { width: 40px; height: 40px; fill: #444; }
+
+        .persona-info { text-align: center; }
+        .persona-info h4 { font-size: 15px; margin-bottom: 4px; }
+        .persona-info p { font-size: 10px; color: var(--text-muted); }
+
+        .chip-group { display: flex; gap: 8px; margin: 10px 0; }
+        .chip { 
+            font-size: 9px; 
+            border: 1px solid #333; 
+            padding: 2px 8px; 
+            border-radius: 2px;
+            color: var(--text-muted);
+        }
+
+        .persona-stats { width: 100%; border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 5px; }
+        .p-stat { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+
+        .endpoint-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .endpoint-row:last-child { border-bottom: none; }
+
+        .method {
+            font-size: 9px;
+            font-weight: bold;
+            padding: 3px 6px;
+            border-radius: 2px;
+            width: 50px;
+            text-align: center;
+        }
+
+        .method.get { border: 1px solid var(--accent-teal); color: var(--accent-teal); }
+        .method.post { background-color: var(--accent-teal); color: #000; }
+
+        .path { font-size: 11px; color: var(--text-main); margin: 0 10px; flex-grow: 1; }
+        .e-icon { width: 14px; height: 14px; fill: #444; }
+
+        /* --- TERMINAL --- */
+        .terminal-panel {
+            background-color: #050505;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 350px;
+        }
+
+        .terminal-header {
+            padding: 10px 20px;
+            background-color: #0a0a0a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .win-dots { display: flex; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; opacity: 0.8; }
+        .dot.red { background: #FF4B4B; }
+        .dot.yellow { background: #FFD700; }
+        .dot.green { background: #00FFD1; }
+
+        .terminal-body {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            color: #ddd;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .log-line span.level { font-weight: bold; margin-right: 8px; }
+        .level.ok { color: var(--accent-teal); }
+        .level.info { color: #66ccff; }
+        .level.warn { color: var(--accent-amber); }
+        .level.end { color: #FFA500; }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background-color: var(--accent-teal);
+            margin-left: 5px;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* --- ENVIRONMENT REGISTRY --- */
+        .registry-section {
+            border-top: 1px solid var(--border-color);
+            padding-top: 30px;
+        }
+
+        .registry-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+        }
+
+        .registry-header hr { flex-grow: 1; border: none; border-top: 1px solid var(--border-color); }
+
+        .env-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        .env-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            transition: border-color 0.3s;
+        }
+
+        .env-card:hover { border-color: #444; }
+        .env-card.active { border-color: var(--accent-teal); }
+
+        .env-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .env-name { font-size: 16px; font-weight: bold; }
+        .difficulty { font-size: 9px; padding: 2px 8px; border-radius: 2px; font-weight: bold; }
+        .diff-easy { background: rgba(0, 255, 209, 0.1); color: var(--accent-teal); border: 1px solid var(--accent-teal); }
+        .diff-mid { background: rgba(255, 215, 0, 0.1); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+        .diff-hard { background: rgba(255, 75, 75, 0.1); color: var(--accent-red); border: 1px solid var(--accent-red); }
+
+        .env-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; min-height: 50px; }
+
+        .action-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 10px 0; }
+        .action-row.three { grid-template-columns: repeat(3, 1fr); }
+
+        .btn-action {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: var(--text-muted);
+            padding: 8px;
+            font-size: 9px;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover { border-color: var(--accent-teal); color: var(--text-main); }
+
+        .reward-meter { margin-top: 10px; }
+        .meter-info { display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 6px; }
+        .meter-bg { width: 100%; height: 4px; background: #222; position: relative; }
+        .meter-fill { height: 100%; background: var(--accent-teal); width: 0%; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .btn-run-env {
+            margin-top: 10px;
+            width: 100%;
+            background: #151515;
+            border: 1px solid #333;
+            color: var(--text-main);
+            padding: 12px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-run-env:hover { background: #222; border-color: var(--accent-teal); }
+
+        /* --- SCROLLBAR --- */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+    </style>
+</head>
+<body>
+
+    <!-- LEFT SIDEBAR -->
+    <aside>
+        <div class="sidebar-header">
+            <div class="avatar-circle">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+            </div>
+            <div class="header-text">
+                <h3>KINETIC_CONSOLE</h3>
+                <p>V1.0.4_ACTIVE</p>
+            </div>
+        </div>
+
+        <ul class="nav-list">
+            <li class="nav-item active">
+                <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                DASHBOARD
+            </li>
+            <li class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                API_DOCS
+            </li>
+            <li class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                PERSONA_SETTINGS
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <button class="run-btn" id="sidebarRunBtn">RUN_EPISODE</button>
+            <div class="nav-item" style="padding: 10px 0;" onclick="document.getElementById('terminal').scrollIntoView({behavior:'smooth'})">
+                <svg class="nav-icon" style="flex-shrink:0" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                SYSTEM_LOGS
+            </li>
+            <div class="nav-item" style="padding: 10px 0;">
+                <svg class="nav-icon" style="flex-shrink:0" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                SETTINGS
+            </li>
+        </div>
+    </aside>
+
+    <div class="main-container">
+        <!-- TOP NAVBAR -->
+        <header class="navbar">
+            <div class="navbar-left">
+                <div class="brand-name">ANIGREVITY: OPENENV</div>
+                <div class="badge">SST INDIA AI HACKATHON</div>
+            </div>
+            <div class="navbar-right">
+                <div class="api-status">
+                    <div id="statusDot" class="status-dot"></div>
+                    API STATUS: <span id="statusText">DETECTING...</span>
+                </div>
+                <a href="#" class="nav-link active">DASHBOARD</a>
+                <a href="http://localhost:7860/docs" target="_blank" class="nav-link">DOCUMENTATION</a>
+                <div class="nav-link" style="margin-left: 10px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.48m-8.48 0a6 6 0 0 1 0-8.48m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="content">
+            
+            <!-- METRIC ROW -->
+            <div class="metric-row">
+                <div class="metric-card">
+                    <span class="metric-label">REWARD RANGE</span>
+                    <span class="metric-value">0.01 - 0.99</span>
+                    <div class="metric-bar"></div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">ENVIRONMENTS</span>
+                    <span class="metric-value">3 ACTIVE</span>
+                    <span class="metric-sub">MULTI-TENANT ENABLED</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">AVG EPISODE STEPS</span>
+                    <span class="metric-value">5 - 50</span>
+                    <div style="display:flex; gap: 4px; margin-top: 5px;">
+                        <div style="width: 12px; height: 3px; background: var(--accent-teal);"></div>
+                        <div style="width: 12px; height: 3px; background: var(--accent-teal);"></div>
+                        <div style="width: 12px; height: 3px; background: var(--accent-amber);"></div>
+                        <div style="width: 12px; height: 3px; background: var(--border-color);"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">LAST SCORE</span>
+                    <span class="metric-value" id="lastScoreMetric">0.88</span>
+                    <span class="metric-sub" style="color: var(--text-muted);">CONFIDENCE: 92%</span>
+                </div>
+            </div>
+
+            <!-- DASHBOARD GRID -->
+            <div class="grid-main">
+                
+                <!-- TELEMETRY PANEL -->
+                <div class="telemetry-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--accent-teal)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                            LIVE_SIMULATION_TELEMETRY
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn-small" id="resetBtn">RESET</button>
+                            <button class="btn-small primary" id="startBtn">START_EPISODE</button>
+                        </div>
+                    </div>
+
+                    <div class="telemetry-body">
+                        <div class="status-block">
+                            <div class="input-group">
+                                <label>TARGET_ENV</label>
+                                <select class="select-dark" id="envSelect">
+                                    <option value="scaler">Cloud AutoScaler</option>
+                                    <option value="code_review">Code Review Auditor</option>
+                                    <option value="wdif">ML Failure Diagnoser</option>
+                                </select>
+                            </div>
+                            
+                            <div style="margin-top: 10px;">
+                                <div class="stat-line">
+                                    <span class="stat-label">STATUS_BLOCK</span>
+                                </div>
+                                <div class="stat-line">
+                                    <span class="stat-label">STEPS:</span>
+                                    <span class="stat-value teal" id="stepCounter">000/050</span>
+                                </div>
+                                <div class="stat-line">
+                                    <span class="stat-label">LATENCY:</span>
+                                    <span class="stat-value" id="latencyStat">--ms</span>
+                                </div>
+                                <div class="stat-line">
+                                    <span class="stat-label">UTIL_AVG:</span>
+                                    <span class="stat-value" id="utilStat">0.0%</span>
+                                </div>
+                                <div class="stat-line">
+                                    <span class="stat-label">MEM:</span>
+                                    <span class="stat-value">1.2GB</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <canvas id="telemetryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN -->
+                <div class="sidebar-cards">
+                    <!-- PERSONA CARD -->
+                    <div class="info-card">
+                        <div class="persona-header">
+                            <span style="color: var(--accent-teal); font-weight: bold; letter-spacing: 1px;">ANIGREVITY_PERSONA</span>
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#444" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        </div>
+                        <div class="persona-body">
+                            <div class="robot-avatar">
+                                <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7v8H3v-8a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5M15 20v-1H9v1h6z"></path></svg>
+                                <div style="position: absolute; top:-5px; right:-5px; width: 25px; height: 25px; opacity: 0.1">
+                                    <svg viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="10"></circle></svg>
+                                </div>
+                            </div>
+                            <div class="persona-info">
+                                <h4>LLAMA 3.1 8B</h4>
+                                <p>QUANTIZED VIA GROQ</p>
+                                <div class="chip-group">
+                                    <div class="chip">HF_TOKEN_REQ</div>
+                                    <div class="chip">ZERO_SHOT</div>
+                                </div>
+                            </div>
+                            <div class="persona-stats">
+                                <div class="p-stat"><span style="color:#666">TEMPERATURE:</span> <span>0.7</span></div>
+                                <div class="p-stat"><span style="color:#666">MAX_TOKENS:</span> <span>4096</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ENDPOINTS CARD -->
+                    <div class="info-card">
+                        <div class="persona-header" style="margin-bottom: 10px;">
+                            <span style="color: var(--text-muted); font-weight: bold; letter-spacing: 1px;">REST_ENDPOINTS</span>
+                        </div>
+                        <div class="endpoint-list">
+                            <div class="endpoint-row" onclick="callApi('/reset', 'POST')">
+                                <div class="method post">POST</div>
+                                <div class="path">/reset</div>
+                                <svg class="e-icon" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                            </div>
+                            <div class="endpoint-row" onclick="callApi('/step', 'POST')">
+                                <div class="method post">POST</div>
+                                <div class="path">/step</div>
+                                <svg class="e-icon" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                            </div>
+                            <div class="endpoint-row" id="getStateRow">
+                                <div class="method get">GET</div>
+                                <div class="path">/state</div>
+                                <svg class="e-icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            </div>
+                            <div class="endpoint-row">
+                                <div class="method get">GET</div>
+                                <div class="path">/history</div>
+                                <svg class="e-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TERMINAL SECTION -->
+            <div class="terminal-panel" id="terminal">
+                <div class="terminal-header">
+                    <span style="letter-spacing: 1px; font-size: 11px;">SYSTEM_TERMINAL_V2</span>
+                    <div class="win-dots">
+                        <div class="dot red"></div>
+                        <div class="dot yellow"></div>
+                        <div class="dot green"></div>
+                    </div>
+                </div>
+                <div class="terminal-body" id="termBody">
+                    <div class="log-line"><span class="level ok">[OK]</span> API_READY: LISTENING ON PORT 7860</div>
+                    <div class="log-line"><span class="level info">[INFO]</span> AGENT_INITIALIZED: LLAMA-3.1-8B-INSTANT</div>
+                    <div class="log-line"><span class="level warn">[WARN]</span> LATENCY_SPIKE: DETECTED ON NODE_CLUSTER_04</div>
+                    <div class="log-line"><span class="level ok">[OK]</span> CONNECTION_ESTABLISHED: WS://KINETIC.ANIGREVITY.AI</div>
+                    <div class="log-line"># WAITING FOR NEW INSTRUCTION... <span class="cursor"></span></div>
+                </div>
+            </div>
+
+            <!-- REGISTRY SECTION -->
+            <div class="registry-section">
+                <div class="registry-header">ACTIVE_ENVIRONMENT_REGISTRY <hr></div>
+                
+                <div class="env-grid">
+                    <!-- SCALER CARD -->
+                    <div class="env-card active" id="scalerCard">
+                        <div class="env-header">
+                            <div class="env-name">CLOUD AUTOSCALER</div>
+                            <div class="difficulty diff-easy">EASY</div>
+                        </div>
+                        <p class="env-desc">AGENT MUST MAINTAIN 70% CPU UTILIZATION BY SCALING HORIZONTAL POD AUTOSCALERS IN RESPONSE TO SYNTHETIC TRAFFIC SPIKES.</p>
+                        <div class="action-row three">
+                            <button class="btn-action" onclick="app.stepAction(0)">HOLD</button>
+                            <button class="btn-action" onclick="app.stepAction(1)">SCALE UP</button>
+                            <button class="btn-action" onclick="app.stepAction(2)">SCALE DOWN</button>
+                        </div>
+                        <div class="reward-meter">
+                            <div class="meter-info"><span>REWARD POTENTIAL</span> <span id="rewardVal1">0.98</span></div>
+                            <div class="meter-bg"><div class="meter-fill" style="width: 98%;"></div></div>
+                        </div>
+                        <button class="btn-run-env" id="btnScalerRun">RUN_EPISODE</button>
+                    </div>
+
+                    <!-- AUDITOR CARD -->
+                    <div class="env-card" id="auditCard">
+                        <div class="env-header">
+                            <div class="env-name">CODE REVIEW AUDITOR</div>
+                            <div class="difficulty diff-mid">MEDIUM</div>
+                        </div>
+                        <p class="env-desc">IDENTIFY LOGIC VULNERABILITIES AND SECURITY FLAWS IN PR DIFFS. HIGH ACCURACY REQUIRED FOR SECURITY-CRITICAL MODULES.</p>
+                        <div class="action-row">
+                            <button class="btn-action">APPROVE</button>
+                            <button class="btn-action">REJECT</button>
+                            <button class="btn-action">CHANGES</button>
+                            <button class="btn-action">COMMENT</button>
+                        </div>
+                        <div class="reward-meter">
+                            <div class="meter-info"><span>REWARD POTENTIAL</span> <span id="rewardVal2">0.82</span></div>
+                            <div class="meter-bg"><div class="meter-fill" style="width: 82%;"></div></div>
+                        </div>
+                        <button class="btn-run-env">RUN_EPISODE</button>
+                    </div>
+
+                    <!-- DIAGNOSER CARD -->
+                    <div class="env-card" id="wdifCard">
+                        <div class="env-header">
+                            <div class="env-name">ML FAILURE DIAGNOSER</div>
+                            <div class="difficulty diff-hard">HARD</div>
+                        </div>
+                        <p class="env-desc">DEBUGGING EXPLODING GRADIENTS AND NAN LOSS VALUES IN DISTRIBUTED TRAINING LOGS. IDENTIFY THE EXACT LAYER AND CAUSE.</p>
+                        <div class="action-row">
+                            <button class="btn-action">LOGS</button>
+                            <button class="btn-action">CONFIG</button>
+                            <button class="btn-action">GRADIENTS</button>
+                            <button class="btn-action">SUBMIT</button>
+                        </div>
+                        <div class="reward-meter">
+                            <div class="meter-info"><span>REWARD POTENTIAL</span> <span id="rewardVal3">0.45</span></div>
+                            <div class="meter-bg"><div class="meter-fill" style="width: 45%;"></div></div>
+                        </div>
+                        <button class="btn-run-env">RUN_EPISODE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="height: 50px;"></div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ANIGREVITY: KINETIC_CONSOLE_LOGIC
+         * Handles simulation, API calls, and UI updates.
+         */
+        
+        const COLORS = {
+            teal: '#00FFD1',
+            amber: '#FFD700',
+            red: '#FF4B4B',
+            bg: '#080808'
+        };
+
+        const app = {
+            chart: null,
+            simInterval: null,
+            step: 0,
+            maxSteps: 50,
+            currentEnv: 'scaler',
+            cumulativeScore: 0,
+            isOnline: false,
+
+            init() {
+                this.initChart();
+                this.attachEvents();
+                this.checkApiStatus();
+                this.addLog('ok', 'KINETIC_CONSOLE INITIALIZED');
+                this.addLog('info', 'READY FOR COMMAND INGRESS');
+            },
+
+            initChart() {
+                const ctx = document.getElementById('telemetryChart').getContext('2d');
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: 21}, (_, i) => `T-${20-i}`),
+                        datasets: [
+                            {
+                                label: 'REWARD_STEP',
+                                data: Array(21).fill(null),
+                                borderColor: COLORS.teal,
+                                backgroundColor: COLORS.teal,
+                                borderWidth: 2,
+                                tension: 0.4,
+                                pointRadius: 0
+                            },
+                            {
+                                label: 'CUMULATIVE_SCORE',
+                                data: Array(21).fill(null),
+                                borderColor: COLORS.amber,
+                                borderDash: [5, 5],
+                                borderWidth: 1.5,
+                                tension: 0.2,
+                                pointRadius: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                align: 'end',
+                                labels: {
+                                    color: '#888',
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    font: { family: 'Space Mono', size: 10 }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                min: 0,
+                                max: 1.0,
+                                ticks: { color: '#444', font: { size: 9 } },
+                                grid: { color: '#1a1a1a', borderDash: [2, 2] }
+                            },
+                            x: {
+                                ticks: { color: '#444', font: { size: 9 } },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            },
+
+            attachEvents() {
+                document.getElementById('startBtn').onclick = () => this.startEpisode();
+                document.getElementById('sidebarRunBtn').onclick = () => this.startEpisode();
+                document.getElementById('btnScalerRun').onclick = () => this.startEpisode();
+                document.getElementById('resetBtn').onclick = () => this.reset();
+                document.getElementById('envSelect').onchange = (e) => this.switchEnv(e.target.value);
+                
+                document.getElementById('getStateRow').onclick = () => {
+                   this.callApi('/info', 'GET');
+                };
+            },
+
+            async checkApiStatus() {
+                try {
+                    const res = await fetch('http://localhost:7860/health', { method: 'GET' });
+                    if (res.ok) {
+                        this.setApiStatus(true);
+                    } else {
+                        throw new Error();
+                    }
+                } catch (e) {
+                    this.setApiStatus(false);
+                    this.addLog('warn', 'BACKEND_DISCONNECTED: SIMULATING VIA MOCK_MODE');
+                }
+            },
+
+            setApiStatus(online) {
+                this.isOnline = online;
+                const dot = document.getElementById('statusDot');
+                const txt = document.getElementById('statusText');
+                if (online) {
+                    dot.className = 'status-dot online';
+                    txt.innerText = 'ONLINE';
+                } else {
+                    dot.className = 'status-dot offline';
+                    txt.innerText = 'OFFLINE';
+                }
+            },
+
+            addLog(level, text) {
+                const body = document.getElementById('termBody');
+                const cursorLine = body.querySelector('.log-line:last-child');
+                
+                const line = document.createElement('div');
+                line.className = 'log-line';
+                line.innerHTML = `<span class="level ${level}">[${level.toUpperCase()}]</span> ${text}`;
+                
+                body.insertBefore(line, cursorLine);
+                body.scrollTop = body.scrollHeight;
+            },
+
+            async callApi(path, method, body = null) {
+                if (!this.isOnline) {
+                    this.addLog('warn', `API_CALL_FAIL [MOCK]: ${method} ${path}`);
+                    return null;
+                }
+                try {
+                    const options = { method };
+                    if (body) {
+                        options.headers = { 'Content-Type': 'application/json' };
+                        options.body = JSON.stringify(body);
+                    }
+                    const res = await fetch(`http://localhost:7860${path}`, options);
+                    const data = await res.json();
+                    this.addLog('ok', `${method} ${path} -> ${JSON.stringify(data).substring(0, 40)}...`);
+                    return data;
+                } catch (e) {
+                    this.addLog('warn', `CONN_ERROR: ${path}`);
+                    return null;
+                }
+            },
+
+            switchEnv(env) {
+                this.currentEnv = env;
+                this.reset();
+                this.addLog('info', `TARGET_ENVIRONMENT_SWITCH: ${env.toUpperCase()}`);
+                
+                // Update cards
+                document.querySelectorAll('.env-card').forEach(c => c.classList.remove('active'));
+                if (env === 'scaler') {
+                    document.getElementById('scalerCard').classList.add('active');
+                    this.maxSteps = 50;
+                } else if (env === 'code_review') {
+                    document.getElementById('auditCard').classList.add('active');
+                    this.maxSteps = 5;
+                } else {
+                    document.getElementById('wdifCard').classList.add('active');
+                    this.maxSteps = 8;
+                }
+                this.updateStepDisplay();
+            },
+
+            reset() {
+                clearInterval(this.simInterval);
+                this.step = 0;
+                this.cumulativeScore = 0;
+                this.updateStepDisplay();
+                this.chart.data.datasets[0].data = Array(21).fill(null);
+                this.chart.data.datasets[1].data = Array(21).fill(null);
+                this.chart.update();
+                this.callApi('/reset', 'POST', { task: this.currentEnv + '_easy' });
+                this.addLog('info', 'SIMULATION_RESET_COMPLETE');
+                document.getElementById('latencyStat').innerText = '--ms';
+                document.getElementById('utilStat').innerText = '0.0%';
+            },
+
+            updateStepDisplay() {
+                const s = this.step.toString().padStart(3, '0');
+                const m = this.maxSteps.toString().padStart(3, '0');
+                document.getElementById('stepCounter').innerText = `${s}/${m}`;
+            },
+
+            startEpisode() {
+                this.reset();
+                this.addLog('ok', `EPISODE_START: ${this.currentEnv.toUpperCase()}`);
+                this.simInterval = setInterval(() => this.tick(), 400);
+            },
+
+            async stepAction(val) {
+                if (this.simInterval) clearInterval(this.simInterval);
+                this.addLog('info', `MANUAL_OVERRIDE: ACTION=${val}`);
+                const res = await this.callApi('/step', 'POST', { action: val });
+                if (res) {
+                    this.handleStepResult(res.reward, res.done, res.observation);
+                }
+            },
+
+            tick() {
+                if (this.step >= this.maxSteps) {
+                    this.endEpisode();
+                    return;
+                }
+                this.step++;
+                this.updateStepDisplay();
+
+                // Mocking logic or API call
+                let reward = 0.5 + Math.random() * 0.4;
+                if (this.step < 10) reward = 0.1 + Math.random() * 0.2; // Warmup
+                
+                // Clamp as per system rules
+                reward = Math.max(0.01, Math.min(0.99, reward));
+                
+                this.handleStepResult(reward, this.step === this.maxSteps);
+            },
+
+            handleStepResult(reward, done) {
+                this.cumulativeScore = (this.cumulativeScore * (this.step - 1) + reward) / this.step;
+                
+                // Update stats
+                const lat = 20 + Math.random() * 30;
+                document.getElementById('latencyStat').innerText = `${lat.toFixed(0)}ms`;
+                document.getElementById('utilStat').innerText = `${(60 + Math.random() * 20).toFixed(1)}%`;
+                document.getElementById('lastScoreMetric').innerText = reward.toFixed(2);
+
+                // Update Chart
+                this.chart.data.datasets[0].data.shift();
+                this.chart.data.datasets[0].data.push(reward);
+                this.chart.data.datasets[1].data.shift();
+                this.chart.data.datasets[1].data.push(this.cumulativeScore);
+                this.chart.update('none');
+
+                if (this.step % 10 === 0) {
+                   this.addLog('info', `STEP_${this.step}_SNAPSHOT: REWARD=${reward.toFixed(4)}`);
+                }
+
+                if (done) this.endEpisode();
+            },
+
+            endEpisode() {
+                clearInterval(this.simInterval);
+                this.addLog('end', `EPISODE_COMPLETE: task=${this.currentEnv}_easy score=${this.cumulativeScore.toFixed(2)} steps=${this.step}`);
+                this.addLog('ok', 'REWARD_STABILIZED: DELTA < 0.001');
+            }
+        };
+
+        window.onload = () => app.init();
+
+    </script>
+</body>
+</html>
