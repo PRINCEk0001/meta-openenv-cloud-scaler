@@ -1,15 +1,15 @@
 """
 Utility functions for scoring and clamping in the Cloud AutoScaler environment.
 Ensures consistency across inference, environment, and server logging.
-Includes bulletproof handling for NaN, Inf, and None values.
+Compliant with Phase 2: NaN/Inf Protection and 0.01/0.99 Clipping.
 """
 
 import math
 
 def safe_score(raw) -> str:
     """
-    Implement the strict (0.01, 0.99) safety clamp and 2dp formatting.
-    Guaranteed to return a finite numeric string.
+    Implement the strict [0.01, 0.99] safety clamp and 2dp formatting.
+    Ensures values like 0.0 or 1.0 are never returned.
     """
     try:
         if raw is None:
@@ -17,20 +17,20 @@ def safe_score(raw) -> str:
         else:
             val = float(raw)
             
-        # Bulletproof NaN/Inf filtering
+        # Phase 2: NaN/Inf Protection
         if not math.isfinite(val):
             val = 0.01
     except (ValueError, TypeError):
         val = 0.01
     
-    # Strict clamping to (0, 1) exclusive range
-    clamped = max(0.01, min(0.99, val))
+    # Phase 2: The "0.01/0.99" Clip
+    clamped = min(max(val, 0.01), 0.99)
     return f"{clamped:.2f}"
 
 def clamp_reward(r, eps=0.01) -> float:
     """
     Returns the numeric clamped value as a float.
-    Handles NaN/Inf gracefully by defaulting to eps.
+    Handles NaN/Inf gracefully by defaulting to 0.01.
     """
     try:
         if r is None:
@@ -43,4 +43,4 @@ def clamp_reward(r, eps=0.01) -> float:
     except (ValueError, TypeError):
         val = eps
         
-    return max(eps, min(1.0 - eps, val))
+    return min(max(val, eps), 1.0 - eps)
