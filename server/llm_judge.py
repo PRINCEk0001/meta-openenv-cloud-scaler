@@ -29,6 +29,8 @@ _JUDGE_SYSTEM = textwrap.dedent("""
 """).strip()
 
 
+from server.utils import clamp_reward
+
 def judge(
     client: OpenAI,
     model: str,
@@ -78,7 +80,8 @@ def judge(
         )
         text = (completion.choices[0].message.content or "").strip()
         data = json.loads(text)
-        raw  = float(data.get("score", 0.01))
-        return round(max(0.01, min(0.99, raw)), 2)
+        raw  = data.get("score", 0.01)
+        return clamp_reward(raw)
     except Exception:
         return None
+

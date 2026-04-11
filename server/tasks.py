@@ -1,6 +1,6 @@
 """
 server/tasks.py — Logic for grading task performance in the Cloud AutoScaler environment.
-Ensures all scores are strictly within (0.001, 0.999).
+Ensures all scores are strictly within (0.01, 0.99).
 """
 
 import math
@@ -23,9 +23,13 @@ def _calculate_score_logic(state) -> float:
         return 0.1
 
     # 1. Utilization Score (40%) - Target 0.7 (70%)
-    avg_util = sum(state.utilization_history) / len(state.utilization_history)
-    # 1.0 if exactly 0.7, linear drop-off
-    util_score = max(0.0, 1.0 - abs(avg_util - 0.7) / 0.7)
+    hist = getattr(state, "utilization_history", [])
+    if not hist:
+        util_score = 0.5
+    else:
+        avg_util = sum(hist) / len(hist)
+        # 1.0 if exactly 0.7, linear drop-off
+        util_score = max(0.0, 1.0 - abs(avg_util - 0.7) / 0.7)
 
     # 2. Stability Score (25%) - Low variance in latency
     avg_lat = state.avg_latency
@@ -37,7 +41,11 @@ def _calculate_score_logic(state) -> float:
         stability_score = 0.99
 
     # 3. Cost Score (20%) - Minimize servers (MAX_SERVERS=50, MIN_SERVERS=1)
-    avg_servers = sum(state.server_history) / len(state.server_history)
+    s_hist = getattr(state, "server_history", [])
+    if not s_hist:
+        avg_servers = 10
+    else:
+        avg_servers = sum(s_hist) / len(s_hist)
     # 0.99 if 1 server, 0.01 if 50 servers
     cost_score = max(0.01, 0.99 - (avg_servers - 1) / 49)
 
@@ -65,13 +73,11 @@ def grade_task_easy(state) -> float:
 
 def grade_task_medium(state) -> float:
     """Grader for the medium auto-scaling task."""
-    # Could add extra penalties for medium here if needed
     raw_score = _calculate_score_logic(state)
     return normalize_score(raw_score)
 
 def grade_task_hard(state) -> float:
     """Grader for the hard auto-scaling task."""
-    # Could add extra penalties for hard here if needed
     raw_score = _calculate_score_logic(state)
     return normalize_score(raw_score)
 
@@ -104,4 +110,3 @@ def grade_task(task_name: str, state) -> float:
     else:
         # Default to easy logic (broad match for 'easy' or anything else)
         return grade_task_easy(state)
-
