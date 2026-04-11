@@ -11,7 +11,7 @@ if _root not in sys.path:
 
 from openai import OpenAI
 
-from server.models import ScalerAction, CodeReviewAction
+from server.models import ScalerAction, CodeReviewAction, WhyDidItFailAction
 from server.environment import CloudAutoScalerEnvironment, CodeReviewEnvironment
 
 # ── BUG 3 FIX: read HF_TOKEN (not API_KEY) — validator injects HF_TOKEN ─────
@@ -107,13 +107,55 @@ vuln: "query = f'SELECT * FROM users WHERE id={user_input}'" → {"action_type":
 clean: → {"action_type":"approve","severity":"low","comment":"no issues","reasoning":"no security patterns detected"}
 """
 
+SYS_PROMPT_WDIF = """
+You are Anigrevity, an ML Failure Diagnosis Agent.
 
-def get_action(obs: Any, task_name: str, last_action: int = 0) -> Union[ScalerAction, CodeReviewAction]:
-    is_code_review = "code_review" in task_name.lower()
+MISSION
+Diagnose training failures in 3-4 inspections, then submit_diagnosis. Score 0.99 requires exact label + numeric evidence.
+
+INSPECTION ORDER:
+1. inspect_logs → check loss curves
+2. inspect_config → check lr, optimizer, activation
+3. inspect_gradients → if required (for vanishing/exploding)
+
+FAILURE LABELS (use EXACT string):
+- "underfitting"
+- "overfitting"
+- "learning rate too high"
+- "learning rate too low"
+- "exploding gradients"
+- "vanishing gradients"
+- "dying relu"
+- "bad weight initialization"
+
+DIAGNOSIS RULES:
+- loss oscillates wildly (e.g., 2.31→0.45→3.12) + lr=5.0 → "learning rate too high"
+- train_acc ~ val_acc ~ 0.10 for 20 epochs, linear model → "underfitting"
+- train_loss ↓, val_loss ↑ after epoch 20 → "overfitting"
+- loss NaN after epoch 3, RNN → "exploding gradients"
+- gradient norms: 1.2e-1 → 3.4e-9 exponentially → "vanishing gradients"
+- all hidden gradient norms = 0.0 with ReLU → "dying relu"
+
+OUTPUT RULES
+For inspections: {"action_type":"inspect_logs"} etc.
+For final: {"action_type":"submit_diagnosis","diagnosis":"<exact label>","suggested_fix":"<concrete fix>","reasoning":"<cite numbers from logs/config>"}
+
+EXAMPLE
+→ {"action_type":"submit_diagnosis","diagnosis":"learning rate too high","suggested_fix":"reduce lr from 5.0 to 0.001 and add gradient clipping","reasoning":"train_loss oscillates 2.31 to 3.12 across epochs with lr=5.0 in config"}
+"""
+
+
+def get_action(obs: Any, task_name: str, last_action: int = 0) -> Union[ScalerAction, CodeReviewAction, WhyDidItFailAction]:
+    task_name_l = task_name.lower()
+    is_code_review = "code_review" in task_name_l or "codereview" in task_name_l
+    is_wdif = "whydiditfail" in task_name_l or "wdif" in task_name_l
 
     if is_code_review:
         prompt  = f"File: {getattr(obs, 'file_content', '')}\nDiff: {getattr(obs, 'diff_summary', '')}"
         sys_msg = SYS_PROMPT_REVIEW
+    elif is_wdif:
+        prompt = f"Description: {getattr(obs, 'task_description', '')}\nFeedback: {getattr(obs, 'feedback', '')}\nData: {getattr(obs, 'visible_data', {})}"
+        sys_msg = SYS_PROMPT_WDIF
     else:
         if isinstance(obs, (list, tuple)) or hasattr(obs, "shape"):
             traffic, servers, latency = obs[0], obs[1], obs[2]
@@ -143,6 +185,13 @@ def get_action(obs: Any, task_name: str, last_action: int = 0) -> Union[ScalerAc
                 severity=data.get("severity", "low"),
                 comment=data.get("comment", "Audit"),
                 reasoning=data.get("reasoning", "Trajectory review")
+            )
+        elif is_wdif:
+            return WhyDidItFailAction(
+                action_type=data.get("action_type", "inspect_logs"),
+                diagnosis=data.get("diagnosis"),
+                suggested_fix=data.get("suggested_fix"),
+                reasoning=data.get("reasoning")
             )
         else:
             action_val = int(data.get("action", 0))
