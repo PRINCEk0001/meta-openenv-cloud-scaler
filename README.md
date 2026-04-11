@@ -1,5 +1,5 @@
 ---
-title: Cloud AutoScaler Env
+title: Cloud AutoScaler & Security Auditor
 emoji: ☁️
 colorFrom: blue
 colorTo: purple
@@ -7,132 +7,81 @@ sdk: docker
 pinned: false
 ---
 
-# ☁️ Cloud AutoScaler Environment
+# ☁️ Anigrevity: Multi-Agent OpenEnv Suite
 
 [![Gymnasium Compliant](https://img.shields.io/badge/Gymnasium-v0.29.1-blue.svg)](https://gymnasium.farama.org/)
 [![FastAPI Server](https://img.shields.io/badge/FastAPI-0.110.0-teal.svg)](https://fastapi.tiangolo.com)
 [![Meta OpenEnv](https://img.shields.io/badge/Track-Meta_OpenEnv-purple.svg)]()
 
-Welcome to the **Cloud AutoScaler Environment**, a fully compliant Gymnasium simulation designed for the **Meta OpenEnv Track** hackathon. 
+Welcome to the **Anigrevity OpenEnv Suite**, a collection of three high-fidelity simulation environments designed for the **Meta OpenEnv Track** hackathon. 
 
-This environment simulates a core dev-ops challenge: managing a cloud server farm where an RL agent or heuristic controller must dynamically spin servers up and down in response to volatile web traffic. The agent must balance infrastructure **costs** against user **latency**, strictly avoiding critical service outages while minimizing over-provisioning.
-
----
-
-## 🎯 The Challenge
-
-The environment simulates a baseline sine wave of HTTP traffic, overlaid with randomized, high-volume traffic spikes. The agent receives continuous, real-time metrics (latency, current load, utilization) and must select one of three actions per step:
-
-1. **Hold** (`0`) — Maintain the current server count.
-2. **Scale Up** (`1`) — Provision an additional server.
-3. **Scale Down** (`2`) — Deprovision a server.
-
-**Optimization Target:** Maintain a strict 60-80% capacity utilization with latency strictly under 50ms, without overspending on idle infrastructure.
+This repository implements a production-ready, agent-agnostic infrastructure for evaluating LLM-based autonomous controllers across infrastructure management, security auditing, and failure diagnosis.
 
 ---
 
-## 🏗️ Architecture & Requirements
+## 🎭 The Anigrevity Persona
 
-This repository is strictly structured to support both local programmatic benchmarking and the **Meta OpenEnv Automated Evaluator** via Hugging Face Spaces.
+All agents in this suite are integrated with the **Anigrevity** persona—a strict, goal-oriented autonomous controller designed for Zero-Shot and Few-Shot LLM evaluation.
 
-### OpenEnv Compliance Features
-* **Gymnasium v0.29.1 standard:** Implements a strict `CloudScalerEnv(gym.Env)` class.
-* **Tuple returns:** Standardized `(obs, info)` for resets and `(obs, reward, terminated, truncated, info)` for steps.
-* **Bounded execution:** Hard limits capped at `MAX_STEPS = 50` to prevent infinite loops (`truncated=True`).
-* **Normalized Rewards:** Strictly clamped to the open interval `(0.001, 0.999)`.
-* **Standardized Metadata:** The `info` dictionary strictly tracks `is_success`, `latency_ms`, `active_servers`, and `step_count`.
+1.  **Cloud Infrastructure Controller (Scaler)**: Manages server fleets to balance 70% utilization with <50ms latency.
+2.  **Expert Security Auditor (Reviewer)**: Scans 5-step diffs for SQLi, XSS, and auth bypasses. Blocks vulnerabilities with `reject` actions.
+3.  **ML Failure Diagnosis (WDIF)**: Diagnoses training failures (e.g., vanishing gradients, dying ReLUs) through systematic log and config inspection.
 
 ---
 
-## 📊 Simulation Dynamics
+## 🏗️ Technical Architecture & Requirements
 
-* **Episode Horizon:** 50 steps
-* **Initial State:** 10 active servers handling a baseline ~250 req/s load.
-* **Capacity Limit:** Each server is capped at precisely 25 requests per second.
-* **Traffic Volatility:** Traffic naturally oscillates between 250 and 750 req/s. Spike events (e.g. +400 req/s) occur randomly 20% of the time, generally every 5th step.
-
-### Reward Function (Clamped `(0.001, 0.999)`)
-* **Healthy (`0.97` base):** System latency < 50ms.
-* **Degraded (`0.60` base):** System latency 50ms - 150ms.
-* **Poor (`0.30` base):** System latency 150ms - 500ms.
-* **Critical Outage (`0.001` base):** System latency > 500ms (Hard failure).
-* *Note: Up to `-0.20` is dynamically deducted from the base score to penalize capacity over-provisioning (idle servers), with a final hard clamp at `0.001`.*
-
-### Latency Modeling 
-* **< 70% load:** 20-40ms (Optimal)
-* **70-90% load:** 50-150ms (Acceptable)
-* **90-100% load:** 200-400ms (Degraded)
-* **> 100% load:** 600-1000ms (Outage)
+### 💎 Strict Compliance (Phase 2 Hardened)
+This repository is optimized to pass the Meta OpenEnv automated validator with a **100% success rate** on boundary conditions:
+*   **Hardened Reward Range**: All rewards and final task scores are strictly clamped to the **(0.01, 0.99)** interval. Values like `0.0` or `1.0` are impossible, preventing evaluation "out of range" errors.
+*   **Standardized Logging**: Every episode produces a mandatory `[END]` log in the exact format required: `[END] task={task} score={final_score:.2f} steps={n}`.
+*   **LLM Proxy Integration**: Ready for the `HF_TOKEN` and `API_BASE_URL` injection, using the Groq-powered `llama-3.1-8b-instant` baseline.
 
 ---
 
-## 🚀 Quick Start & Usage
+## 📊 Environment Catalog
 
-This environment natively supports both headless Python invocation and headless REST/WebSocket execution via Docker.
+### 1. Cloud AutoScaler (`autoscaling_easy/medium/hard`)
+Simulates a core dev-ops challenge: managing server farms in response to volatile web traffic.
+*   **Actions**: `0: Hold`, `1: Scale Up`, `2: Scale Down`.
+*   **Optimization**: Target 60-80% capacity utilization.
+*   **Episode Horizon**: 50 steps.
 
-### 1. Direct Python Execution (Evaluator Standard)
-You can directly import the environment via the standard Hugging Face/OpenEnv topology:
+### 2. Code Review Auditor (`code_review_easy/medium/hard`)
+Evaluates security reasoning by presenting patches with potential vulnerabilities.
+*   **Actions**: `approve`, `reject`, `request_changes`, `comment`.
+*   **Episode Horizon**: 5 steps.
 
-```python
-import env as open_env
-import numpy as np
+### 3. Why Did It Fail (`whydiditfail_easy`)
+ML Diagnosis task requiring step-by-step investigation of training logs and configurations.
+*   **Actions**: `inspect_logs`, `inspect_config`, `inspect_gradients`, `submit_diagnosis`.
 
-# Instantiate the standard Gymnasium environment
-env = open_env.CloudScalerEnv()
-obs, info = env.reset()
+---
 
-# Sample a random scaling action
-action = env.action_space.sample()
+## 🚀 Deployment & Usage
 
-# Execute timestep
-obs, reward, terminated, truncated, info = env.step(action)
-print(f"Latency: {info['latency_ms']}ms | Active Servers: {info['active_servers']}")
-```
-
-### 2. REST API / Docker Execution
-When deployed on Hugging Face Spaces (or locally via Docker), the environment automatically serves a FastAPI wrapper on port `7860`.
+### HF Spaces Standard
+The environment serves a FastAPI wrapper on port `7860`.
 
 ```bash
-# Build and run the container locally
-docker build -t meta-openenv-cloud-scaler .
-docker run -p 7860:7860 meta-openenv-cloud-scaler
+# Local Execution
+docker build -t meta-openenv-anigrevity .
+docker run -p 7860:7860 meta-openenv-anigrevity
 ```
 
-**Testing the HTTP Endpoints:**
+### Integrated Inference
+To run a full evaluation locally using the Anigrevity inference script:
 ```bash
-# 1. Reset the simulation episode
-curl -X POST http://localhost:7860/reset
-
-# 2. Scale up by provisioning one new server
-curl -X POST http://localhost:7860/step \
-     -H "Content-Type: application/json" \
-     -d '{"action": 1}'
-
-# 3. Verify server health
-curl http://localhost:7860/health
+set HF_TOKEN=your_token_here
+python inference.py
 ```
 
-### 3. Integrated Client Testing
-A fully typed heuristic client (`client.py`) and a demo script (`demo.py`) are included to quickly test the live endpoints. 
-
+### Pre-Deployment Verification
+Before pushing to Hugging Face, run the validation suite:
 ```bash
-# Run 10 steps using the live Hugging Face Space URL
-pip install httpx pydantic
-python demo.py
+python main.py
 ```
-
----
-
-## 🤖 Agentic Evaluation & Variance Check
-
-This environment is fully prepared for automated evaluation by Open LLM Agents (e.g., Nemotron 3 Super). 
-
-### Baseline Performance (Heuristic)
-Running the baseline standard agent (`client.py` using simple utiliziation threshold heuristics) over 50 steps typically yields a **Total Reward between 0.001 and 0.999**. Score variance strictly depends on the randomized +400 req/s traffic spikes.
-
-### LLM Agent Variance & Readiness
-- **Docstring Prompts**: The environment is equipped with rich `__doc__` strings in the `CloudScalerEnv` class, explicitly detailing the `[latency, cost, capacity]` trade-offs as expected by zero-shot LLM prompts.
-- **Score Variance**: Agent evaluation pipelines should expect a baseline variance margin within the `(0.001, 0.999)` range. Outage protection: Instead of a massive negative penalty, we floor the score at 0.001 to avoid validation failures while still highlighting poor performance.
 
 ---
 *Developed for the Meta LLM OpenEnv Hackathon* ☁️
+Meta LLM OpenEnv Hackathon* ☁️
