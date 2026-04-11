@@ -1,46 +1,39 @@
 """
 Utility functions for scoring and clamping in the Cloud AutoScaler environment.
 Ensures consistency across inference, environment, and server logging.
-Compliant with Phase 2: NaN/Inf Protection and 0.01/0.99 Clipping.
+Compliant with Phase 2: "Last Mile" Ultra-Strict Hardening (Submission #26).
 """
 
 import math
 
-def safe_score(raw) -> str:
+def safe_score(value):
     """
-    Implement the strict [0.01, 0.99] safety clamp and 2dp formatting.
-    Ensures values like 0.0 or 1.0 are never returned.
-    """
-    try:
-        if raw is None:
-            val = 0.01
-        else:
-            val = float(raw)
-            
-        # Phase 2: NaN/Inf Protection
-        if not math.isfinite(val):
-            val = 0.01
-    except (ValueError, TypeError):
-        val = 0.01
-    
-    # Phase 2: The "0.01/0.99" Clip
-    clamped = min(max(val, 0.01), 0.99)
-    return f"{clamped:.2f}"
-
-def clamp_reward(r, eps=0.01) -> float:
-    """
-    Returns the numeric clamped value as a float.
-    Handles NaN/Inf gracefully by defaulting to 0.01.
+    Implements ultra-strict clamping for meta-hf hackathon.
+    Guaranteed to return a float strictly within (0.01, 0.99).
     """
     try:
-        if r is None:
-            val = eps
-        else:
-            val = float(r)
+        # 1. Handle non-finite numbers
+        if value is None:
+            return 0.01
             
-        if not math.isfinite(val):
-            val = eps
-    except (ValueError, TypeError):
-        val = eps
+        val = float(value)
         
-    return min(max(val, eps), 1.0 - eps)
+        if not math.isfinite(val):
+            return 0.01
+        
+        # 2. STRICT CLAMPING: No 0.0, No 1.0
+        # If the environment wants to give 100%, we give 99%.
+        if val >= 1.0: 
+            return 0.99
+        if val <= 0.0: 
+            return 0.01
+        
+        # Clamp to [0.01, 0.99] inclusive of those ends, but exclusive of 0.0/1.0
+        clamped = max(0.01, min(0.99, val))
+        return round(clamped, 4) # Keep precision but stay safely in range
+    except Exception:
+        return 0.01
+
+def clamp_reward(reward):
+    """Alias for safe_score to maintain backward compatibility."""
+    return safe_score(reward)
