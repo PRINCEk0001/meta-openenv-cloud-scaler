@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 import uvicorn
 from pydantic import BaseModel
 
@@ -62,15 +63,10 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {
-        "name": "cloud-autoscaler-env",
-        "version": "1.0.0",
-        "status": "healthy",
-        "docs": "/docs",
-        "health": "/health",
-        "reset": "POST /reset",
-        "step": "POST /step",
-    }
+    # Serve the Kinetic Console as the landing page
+    # Since app.py is run from the root or server directory, index.html is in the project root.
+    # We'll use the absolute path or check availability.
+    return FileResponse("index.html")
 
 
 @app.get("/health")
