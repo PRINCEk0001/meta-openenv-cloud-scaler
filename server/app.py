@@ -115,9 +115,8 @@ async def step(action: Union[ScalerAction, CodeReviewAction, Any]):
     # [STEP] Mandatory Phase 1 log - Strict Clamp
     action_val = getattr(action, "action", 0)
     # Ensure even step rewards are clamped away from 0.0/1.0
-    s_reward = float(safe_score(reward))
+    s_reward = safe_score(reward)
     print(f"[STEP] step={_env_instance._step_count} action={{\"action\":{action_val}}} rewards={s_reward:.2f} done={'true' if done else 'false'} error=null", flush=True)
-    
     return StepResult(observation=obs, reward=s_reward, done=done, info=info)
     
 
@@ -137,7 +136,7 @@ async def grader(req: GraderRequest):
         # [END] Mandatory Phase 1 log - Strict Clamp every reward in the list
         rewards_list = getattr(_env_instance._state, "step_rewards", [])
         # Apply safe_score to EVERY item in the join to prevent 0.00/1.00 in the list
-        r_str = ",".join(safe_score(r) for r in rewards_list) if rewards_list else "0.01"
+        r_str = ",".join(f"{safe_score(r):.2f}" for r in rewards_list) if rewards_list else "0.01"
         print(f"[END] success={'true' if is_success else 'false'} steps={len(rewards_list)} rewards={r_str}", flush=True)
 
         log.info(f"Grading ({req.task}) -> Raw={raw_score:.4f}, Final={score_str}, success={is_success}")
@@ -179,8 +178,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 
             action = ScalerAction(action=int(data.get("action", 0)))
             obs, reward, done, info = ws_env.step(action)
+            s_reward = safe_score(reward)
             
-            result = StepResult(observation=obs, reward=reward, done=done, info=info)
+            result = StepResult(observation=obs, reward=s_reward, done=done, info=info)
             await websocket.send_json(result.model_dump())
             
             # auto-reset on completion
