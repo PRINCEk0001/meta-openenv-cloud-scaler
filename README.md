@@ -7,15 +7,15 @@ sdk: docker
 pinned: true
 ---
 
-# 🤖 Anigrevity: Multi-Agent OpenEnv Suite
-### High-Fidelity RL & LLM Evaluation Framework for the Meta OpenEnv Track
+# 🤖 Anigrevity Cloud Suite
+### High-Fidelity RL & LLM Evaluation Framework for Enterprise Agentic Workflows
 
 [![Gymnasium](https://img.shields.io/badge/Gymnasium-v0.29.1-blue.svg)](https://gymnasium.farama.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-teal.svg)](https://fastapi.tiangolo.com)
 [![Status](https://img.shields.io/badge/Status-Phase_2_Compliance-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-gray.svg)]()
 
-**Anigrevity** is a production-grade evaluation suite designed for the **Meta OpenEnv** hackathon. It provides a synchronized, multi-agent environment hub for benchmarking LLM-based autonomous controllers across infrastructure management, security auditing, and ML failure diagnosis.
+**Anigrevity** is a production-grade evaluation suite for benchmarking and deploying LLM-based autonomous controllers. It provides a synchronized, multi-agent environment hub across infrastructure management, security auditing, and ML failure diagnosis.
 
 ---
 
@@ -32,17 +32,17 @@ graph TD
     D --> F[Code Reviewer]
     D --> G[ML Diagnoser]
     H[Inference Loop] --> C
-    H --> I[HF / Meta LLM Proxy]
+    H --> I[Secure LLM Provider Proxy]
     I --> J[Groq llama-3.1-8b]
 ```
 
 ---
 
-## 💎 Compliance & Hardening (Phase 2)
+## 💎 Enterprise Compliance & Hardening
 
-We have implemented rigorous boundary controls to meet 100% of the Meta OpenEnv automated validation requirements:
+We have implemented rigorous boundary controls for production-ready model evaluations:
 
-*   **Fixed Reward Boundary**: All internal rewards and end-of-episode task scores are hard-clamped to the **(0.01, 0.99)** interval. This eliminates boundary-condition failures (`0.0` or `1.0`) seen in standard evaluations.
+*   **Fixed Reward Boundary**: All internal rewards and end-of-episode task scores are hard-clamped to the **(0.01, 0.99)** interval. This eliminates boundary-condition failures seen in standard evaluations.
 *   **Synchronized Logging Protocol**: Standardized stdout logging for automated parsers:
     *   `[START] task={name} env={suite} model={model}`
     *   `[STEP] step={n} action={...} reward={r} done={b}`
@@ -107,4 +107,4 @@ python main.py
 ```
 
 ---
-*Developed for the Meta LLM OpenEnv Hackathon 2026* ☁️
+*© 2026 Anigrevity Inc. All rights reserved.* ☁️

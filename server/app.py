@@ -47,9 +47,9 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(
-    title="Cloud Autoscaler OpenEnv",
-    description="RL env for cloud infrastructure auto-scaling.",
-    version="1.0.0",
+    title="Anigrevity Cloud Control",
+    description="Enterprise-grade RL environment for cloud infrastructure auto-scaling.",
+    version="1.0.4",
     lifespan=lifespan,
 )
 
