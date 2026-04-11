@@ -1,5 +1,5 @@
-﻿"""
-server/app.py â€” FastAPI app for the Cloud AutoScaler env.
+"""
+server/app.py — FastAPI app for the Cloud AutoScaler env.
 Matches user 'Winning Snippet' logic with local safe_score for maximum compliance.
 """
 
@@ -131,15 +131,16 @@ async def grader(req: GraderRequest):
             return GraderResponse(task=req.task, score=0.10, is_success=False)
         
         raw_score = grade_task(req.task, _env_instance._state)
-        score_str = safe_score(raw_score)
+        # OpenEnv Phase 2 Hardening: task score must be strictly in (0, 1)
+        final_score = max(0.01, min(0.99, float(raw_score)))
         
-        is_success = bool(float(score_str) >= 0.5)
-        
+        is_success = bool(final_score >= 0.5)
         rewards_list = getattr(_env_instance._state, "step_rewards", [])
-        r_str = ",".join(safe_score(r) for r in rewards_list) if rewards_list else "0.10"
-        print(f"[END] success={'true' if is_success else 'false'} steps={len(rewards_list)} rewards={r_str}", flush=True)
+        
+        # Unified [END] format
+        print(f"[END] task={req.task} score={final_score:.2f} steps={len(rewards_list)}", flush=True)
 
-        return GraderResponse(task=req.task, score=float(score_str), is_success=is_success)
+        return GraderResponse(task=req.task, score=final_score, is_success=is_success)
         
     except Exception as e:
         log.error(f"Grader error: {e}")
@@ -171,8 +172,6 @@ async def websocket_endpoint(websocket: WebSocket):
         pass
     finally:
         await websocket.close()
-
-
 
 def main():
     """Entry point required for HF multi-mode deployment"""

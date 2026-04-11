@@ -13,6 +13,7 @@ from openai import OpenAI
 
 from server.models import ScalerAction, CodeReviewAction, WhyDidItFailAction
 from server.environment import CloudAutoScalerEnvironment, CodeReviewEnvironment
+from server.tasks import grade_task
 
 # ── BUG 3 FIX: read HF_TOKEN (not API_KEY) — validator injects HF_TOKEN ─────
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.groq.com/openai/v1")
@@ -274,13 +275,13 @@ def run_task(env: Any, task_name: str):
                 break
 
     finally:
-        success_str = "true" if (rewards_history and done) else "false"
-        r_str = (
-            ",".join(safe_score(r) for r in rewards_history)
-            if rewards_history else "0.10"
-        )
+        # BUG 2 FIX: [END] inside finally — always fires even on exception
+        # OpenEnv Phase 2 Hardening: task score must be strictly in (0, 1)
+        raw_score = grade_task(task_name, env._state)
+        final_score = max(0.01, min(0.99, float(raw_score)))
+        
         print(
-            f"[END] success={success_str} steps={step} rewards={r_str}",
+            f"[END] task={task_name} score={final_score:.2f} steps={step}",
             flush=True,
         )
 
