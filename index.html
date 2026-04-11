@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <style>
         :root {
             --bg-color: #080808;
@@ -31,6 +32,41 @@
             text-transform: uppercase;
             -webkit-font-smoothing: antialiased;
         }
+
+        /* --- CRT SCANLINES --- */
+        .scanline {
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            opacity: 0.6;
+        }
+
+        /* --- BOOT OVERLAY --- */
+        #bootOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            padding: 50px;
+            color: #fff;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            overflow: hidden;
+        }
+
+        .boot-line { margin-bottom: 5px; opacity: 0; animation: fadeIn 0.1s forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         body {
             background-color: var(--bg-color);
@@ -306,10 +342,47 @@
 
         .telemetry-body {
             display: grid;
-            grid-template-columns: 180px 1fr;
+            grid-template-columns: 180px 1fr 220px;
             gap: 20px;
             height: 300px;
         }
+
+        /* --- THOUGHT STREAM --- */
+        .thought-panel {
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: 10px;
+        }
+
+        .thought-header {
+            padding: 8px;
+            background: #151515;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--accent-amber);
+            font-weight: bold;
+        }
+
+        .thought-stream {
+            flex-grow: 1;
+            padding: 10px;
+            overflow-y: auto;
+            color: #666;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .thought-line {
+            border-left: 2px solid #222;
+            padding-left: 8px;
+            line-height: 1.4;
+        }
+
+        .thought-line.thinking { color: var(--accent-teal); border-left-color: var(--accent-teal); }
+        .thought-line.predict { color: var(--accent-amber); border-left-color: var(--accent-amber); }
 
         .status-block {
             display: flex;
@@ -338,6 +411,23 @@
         .stat-line { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; }
         .stat-label { color: var(--text-muted); }
         .stat-value.teal { color: var(--accent-teal); text-shadow: var(--glow-teal); font-weight: bold; }
+
+        .node-graph-container {
+            height: 60px;
+            margin-top: 15px;
+            background: #050505;
+            border: 1px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .node-circle {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            fill: var(--accent-teal);
+            opacity: 0.3;
+        }
+        .node-circle.active { opacity: 0.8; filter: drop-shadow(0 0 5px var(--accent-teal)); }
 
         .chart-container { position: relative; width: 100%; height: 100%; }
 
@@ -556,6 +646,11 @@
     </style>
 </head>
 <body>
+    <div class="scanline"></div>
+    
+    <div id="bootOverlay">
+        <div id="bootBox"></div>
+    </div>
 
     <!-- LEFT SIDEBAR -->
     <aside>
@@ -696,11 +791,22 @@
                                     <span class="stat-label">MEM:</span>
                                     <span class="stat-value">1.2GB</span>
                                 </div>
+                                <div class="node-graph-container">
+                                    <svg id="nodeGraph" width="140" height="40"></svg>
+                                </div>
                             </div>
                         </div>
 
                         <div class="chart-container">
                             <canvas id="telemetryChart"></canvas>
+                        </div>
+
+                        <!-- THOUGHT STREAM -->
+                        <div class="thought-panel">
+                            <div class="thought-header">LIVE_AGENT_THOUGHTS</div>
+                            <div class="thought-stream" id="thoughtStream">
+                                <div class="thought-line">AGENT_STANDBY...</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -879,10 +985,43 @@
 
             init() {
                 this.initChart();
+                this.initNodes();
                 this.attachEvents();
                 this.checkApiStatus();
-                this.addLog('ok', 'KINETIC_CONSOLE INITIALIZED');
-                this.addLog('info', 'READY FOR COMMAND INGRESS');
+                this.bootSystem();
+            },
+
+            bootSystem() {
+                const overlay = document.getElementById('bootOverlay');
+                const box = document.getElementById('bootBox');
+                const lines = [
+                    '>> INITIALIZING ANIGREVITY_KERNEL_V1.0.4...',
+                    '>> MOUNTING SYSTEM_DRIVE [SUCCESS]',
+                    '>> LOADING AGENT_MODEL: LLAMA-3.1-8B-INSTANT',
+                    '>> CONNECTING TO GYM_ENVIRONMENT_HUB...',
+                    '>> VALIDATING PHASE_2_COMPLIANCE...',
+                    '>> ALL SYSTEMS NOMINAL. LAUNCHING CONSOLE.'
+                ];
+                
+                let i = 0;
+                const typeLine = () => {
+                    if (i < lines.length) {
+                        const div = document.createElement('div');
+                        div.className = 'boot-line';
+                        div.innerText = lines[i];
+                        box.appendChild(div);
+                        i++;
+                        setTimeout(typeLine, 300);
+                    } else {
+                        setTimeout(() => {
+                            overlay.style.transition = 'opacity 1s';
+                            overlay.style.opacity = '0';
+                            setTimeout(() => overlay.remove(), 1000);
+                            this.addLog('ok', 'KINETIC_CONSOLE INITIALIZED');
+                        }, 500);
+                    }
+                };
+                typeLine();
             },
 
             initChart() {
@@ -1042,6 +1181,67 @@
                 }
             },
 
+            initNodes() {
+                const svg = document.getElementById('nodeGraph');
+                for (let i = 0; i < 7; i++) {
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", 20 + i * 18);
+                    circle.setAttribute("cy", 20);
+                    circle.setAttribute("r", 5);
+                    circle.setAttribute("class", "node-circle");
+                    svg.appendChild(circle);
+                }
+                this.updateNodes(2);
+            },
+
+            updateNodes(count) {
+                const circles = document.querySelectorAll('.node-circle');
+                circles.forEach((c, i) => {
+                    if (i < count) c.classList.add('active');
+                    else c.classList.remove('active');
+                });
+            },
+
+            addThought(type, text) {
+                const stream = document.getElementById('thoughtStream');
+                const line = document.createElement('div');
+                line.className = `thought-line ${type}`;
+                line.innerText = text;
+                stream.insertBefore(line, stream.firstChild);
+                if (stream.children.length > 20) stream.lastChild.remove();
+            },
+
+            generateThought(step, actionReward) {
+                const thoughts = {
+                    scaler: [
+                        "Analyzing load balancing distribution...",
+                        "Predicting SLO violation risk: < 5%",
+                        "Observing traffic pattern: Sinusoidal",
+                        "Latency check: Within tolerances",
+                        "Optimizing instance cost vs responsiveness"
+                    ],
+                    code_review: [
+                        "Parsing AST for insecure patterns...",
+                        "Checking SQL query sanitization...",
+                        "Verifying cross-domain auth headers...",
+                        "Scanning for hardcoded credentials..."
+                    ],
+                    wdif: [
+                        "Inspecting weight distribution gradients...",
+                        "Detecting activation sparsity...",
+                        "Measuring epoch-over-epoch loss delta..."
+                    ]
+                };
+                
+                const list = thoughts[this.currentEnv];
+                const base = list[Math.floor(Math.random() * list.length)];
+                this.addThought('thinking', `STEP_${step}: ${base}`);
+                
+                if (step % 5 === 0) {
+                   this.addThought('predict', `PREDICT: HEURISTIC_STABILITY_REACHED`);
+                }
+            },
+
             switchEnv(env) {
                 this.currentEnv = env;
                 this.reset();
@@ -1085,12 +1285,15 @@
             startEpisode() {
                 this.reset();
                 this.addLog('ok', `EPISODE_START: ${this.currentEnv.toUpperCase()}`);
+                document.getElementById('thoughtStream').innerHTML = '';
+                this.addThought('thinking', 'INITIALIZING AGENT REASONING_ENGINE...');
                 this.simInterval = setInterval(() => this.tick(), 400);
             },
 
             async stepAction(val) {
                 if (this.simInterval) clearInterval(this.simInterval);
                 this.addLog('info', `MANUAL_OVERRIDE: ACTION=${val}`);
+                this.addThought('predict', `MANUAL_OVERRIDE_DETECTED: ACTION_${val}`);
                 const res = await this.callApi('/step', 'POST', { action: val });
                 if (res) {
                     this.handleStepResult(res.reward, res.done, res.observation);
@@ -1104,6 +1307,7 @@
                 }
                 this.step++;
                 this.updateStepDisplay();
+                this.generateThought(this.step);
 
                 // Mocking logic or API call
                 let reward = 0.5 + Math.random() * 0.4;
@@ -1112,6 +1316,12 @@
                 // Clamp as per system rules
                 reward = Math.max(0.01, Math.min(0.99, reward));
                 
+                // Visual node update based on "mock" behavior
+                if (this.currentEnv === 'scaler') {
+                    const nodeCount = 2 + Math.floor(reward * 5);
+                    this.updateNodes(nodeCount);
+                }
+
                 this.handleStepResult(reward, this.step === this.maxSteps);
             },
 
@@ -1142,6 +1352,16 @@
                 clearInterval(this.simInterval);
                 this.addLog('end', `EPISODE_COMPLETE: task=${this.currentEnv}_easy score=${this.cumulativeScore.toFixed(2)} steps=${this.step}`);
                 this.addLog('ok', 'REWARD_STABILIZED: DELTA < 0.001');
+                this.addThought('predict', `FINAL_SCORE: ${this.cumulativeScore.toFixed(4)}`);
+                
+                if (this.cumulativeScore > 0.8) {
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: [COLORS.teal, COLORS.amber, '#ffffff']
+                    });
+                }
             }
         };
 
