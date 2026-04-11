@@ -1,5 +1,5 @@
-"""
-server/app.py — FastAPI app for the Cloud AutoScaler env.
+﻿"""
+server/app.py â€” FastAPI app for the Cloud AutoScaler env.
 Matches user 'Winning Snippet' logic with local safe_score for maximum compliance.
 """
 
@@ -172,7 +172,12 @@ async def websocket_endpoint(websocket: WebSocket):
     finally:
         await websocket.close()
 
+
+
 def main():
+    """Entry point required for HF multi-mode deployment"""
+    import os
+    import uvicorn
     port = int(os.environ.get("PORT", 7860))
     uvicorn.run("server.app:app", host="0.0.0.0", port=port, reload=False)
 
