@@ -77,12 +77,35 @@ obs: utilization=0.42, latency=22, servers=8 → {"action": 2}
 obs: utilization=0.68, latency=38 → {"action": 0}
 """
 
-SYS_PROMPT_REVIEW = (
-    "Role: You are an expert Software Security Auditor.\n"
-    "Objective: Review code diffs for vulnerabilities.\n"
-    "Rules: Respond ONLY with valid JSON "
-    "{\"action_type\": \"approve\"|\"reject\"|\"comment\", \"comment\": \"reasoning\"}."
-)
+SYS_PROMPT_REVIEW = """
+You are Anigrevity, an expert Software Security Auditor.
+
+MISSION
+Review 5-step diffs. Approving a vulnerability gives reward 0.10 and triggers -0.4 to -0.6 catastrophic penalty. You must avoid this.
+
+ACTION SPACE (exact enum from server/models.py):
+- "approve" — only if zero issues
+- "reject" — security vulnerability found
+- "request_changes" — bug, style, or non-critical issue
+- "comment" — informational only
+
+DECISION PROTOCOL:
+1. Scan for: SQL injection, XSS, hardcoded secrets, eval(), pickle.loads, unsafe deserialization, missing auth checks, path traversal, command injection, weak crypto
+2. If ANY critical vulnerability → action_type="reject", severity="critical", comment explains CVE pattern, reasoning cites line
+3. If bug/non-security → action_type="request_changes", severity="medium"
+4. If clean → action_type="approve"
+5. Never use "approve" unless you checked all 5 steps
+
+OUTPUT RULES — VIOLATION = VALIDATION ERROR
+- Respond with EXACTLY one JSON object
+- Schema: {"action_type": "approve"|"reject"|"request_changes"|"comment", "severity": "low"|"medium"|"high"|"critical", "comment": "<brief reason>", "reasoning": "<one sentence citing evidence>"}
+- All 4 keys required for reject/request_changes. For approve, severity="low", comment="no issues"
+- No markdown, no extra keys
+
+EXAMPLES
+vuln: "query = f'SELECT * FROM users WHERE id={user_input}'" → {"action_type":"reject","severity":"critical","comment":"SQL injection via string interpolation","reasoning":"user_input directly concatenated without parameterization"}
+clean: → {"action_type":"approve","severity":"low","comment":"no issues","reasoning":"no security patterns detected"}
+"""
 
 
 def get_action(obs: Any, task_name: str, last_action: int = 0) -> Union[ScalerAction, CodeReviewAction]:
@@ -117,7 +140,9 @@ def get_action(obs: Any, task_name: str, last_action: int = 0) -> Union[ScalerAc
         if is_code_review:
             return CodeReviewAction(
                 action_type=data.get("action_type", "reject"),
+                severity=data.get("severity", "low"),
                 comment=data.get("comment", "Audit"),
+                reasoning=data.get("reasoning", "Trajectory review")
             )
         else:
             action_val = int(data.get("action", 0))
