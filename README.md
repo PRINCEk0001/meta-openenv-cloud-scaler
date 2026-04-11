@@ -1,8 +1,8 @@
 ---
 title: Anigrevity Agentic Suite
 emoji: 🤖
-colorFrom: cyan
-colorTo: black
+colorFrom: blue
+colorTo: gray
 sdk: docker
 pinned: true
 ---
