@@ -8,6 +8,7 @@ import random
 from typing import Tuple
 import sys
 import os
+from server.utils import safe_score
 
 from pydantic import BaseModel
 
@@ -26,16 +27,6 @@ SERVER_CAPACITY = 25
 MIN_SERVERS = 1
 MAX_SERVERS = 50
 
-def safe_score(raw):
-    """Implement the strict (0.01, 0.99) safety clamp and 2dp formatting.
-    Ensures values like 0.0 or 1.0 are never returned.
-    """
-    try:
-        val = float(raw if raw is not None else 0.01)
-    except (ValueError, TypeError):
-        val = 0.01
-    clamped = max(0.01, min(0.99, val))
-    return f"{clamped:.2f}"
 
 class CloudAutoScalerEnvironment(_BaseEnvironment):
     """

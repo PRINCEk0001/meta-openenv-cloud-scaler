@@ -16,6 +16,7 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 
+from server.utils import safe_score
 
 # ── Tuneable constants ────────────────────────────────────────────────────────
 SERVER_CAPACITY  = 25      # req/s per server
@@ -57,26 +58,21 @@ class CloudScalerEnv(gym.Env):
     metadata = {"render_modes": []}
     reward_range = (0.01, 0.99)
 
-def safe_score(raw):
-    """Implement the strict [0.01, 0.99] safety clamp and 2dp formatting."""
-    clamped = max(0.01, min(0.99, float(raw or 0.01)))
-    return f"{clamped:.2f}"
-
     def __init__(self, task: str = "autoscaling_easy", render_mode=None):
         super().__init__()
 
-        # Gymnasium required spaces ──────────────────────────────────────────
+        # Gymnasium required spaces
         self.observation_space = spaces.Box(
             low=OBS_LOW, high=OBS_HIGH, dtype=np.float32
         )
         self.action_space = spaces.Discrete(3)          # {0, 1, 2}
 
-        # Config ─────────────────────────────────────────────────────────────
+        # Config
         self.task         = task
         self.render_mode  = render_mode
 
-        # Internal state ─────────────────────────────────────────────────────
-        self._active_servers = MIN_SERVERS
+        # Internal state
+        self._active_servers = 10
         self._step_count     = 0
         self._total_reward   = 0.1
         self._done           = False
@@ -123,30 +119,17 @@ def safe_score(raw):
     def _calculate_reward(self, latency: float, servers: int) -> float:
         """
         Step reward strictly in the open interval (0, 1) — never 0.0 or 1.0.
-
-        Base scores (before efficiency penalty):
-        • latency < 50 ms  → base = 0.97  (excellent)
-        • latency < 150 ms → base = 0.60  (degraded)
-        • latency < 500 ms → base = 0.30  (bad)
-        • latency >= 500ms → base = 0.01 (critical outage)
-
-        efficiency_penalty: (servers / MAX_SERVERS) * 0.20
-        Hard clamp: max(0.01, min(0.99, raw))
         """
         if latency >= 500.0:
-            # Critical outage — very low score but strictly > 0
             base_score = 0.05
             efficiency_penalty = 0.01
         elif latency < 50.0:
-            # Excellent performance
             base_score = 0.97
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
         elif latency < 150.0:
-            # Acceptable performance
             base_score = 0.60
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
         else:
-            # Poor performance (high latency, not yet crashing)
             base_score = 0.30
             efficiency_penalty = (servers / MAX_SERVERS) * 0.20
 
@@ -163,17 +146,9 @@ def safe_score(raw):
     # ── Gymnasium API ─────────────────────────────────────────────────────────
 
     def reset(self, *, seed=None, options=None):
-        """
-        Reset the environment to the initial state.
-
-        Returns
-        -------
-        obs  : np.ndarray  shape (3,)
-        info : dict        episode metadata
-        """
         super().reset(seed=seed)
 
-        self._active_servers = 10           # sensible warm-start
+        self._active_servers = 10
         self._step_count     = 0
         self._total_reward   = 0.1
         self._done           = False
@@ -183,64 +158,37 @@ def safe_score(raw):
         obs     = self._make_obs(traffic, latency)
 
         info = {
-            # ── Meta grader required keys ────────────────────────────────
-            "is_success"     : False,
+            "is_success"     : bool(latency < 50.0),
             "latency_ms"     : float(latency),
             "active_servers" : self._active_servers,
             "step_count"     : 0,
-            # ── Extra context ────────────────────────────────────────────
             "traffic"        : float(traffic),
             "total_reward"   : 0.1,
         }
         return obs, info
 
     def step(self, action: int):
-        """
-        Take one step in the environment.
-
-        Parameters
-        ----------
-        action : int  - 0 (hold), 1 (add server), 2 (remove server)
-
-        Returns
-        -------
-        obs        : np.ndarray  shape (3,)
-        reward     : float       in [-1.0, +1.0]
-        terminated : bool        always False (no natural terminal state)
-        truncated  : bool        True after MAX_STEPS steps
-        info       : dict        {is_success, latency_ms, active_servers, step_count, ...}
-        """
-        # ── Apply action ─────────────────────────────────────────────────────
         if int(action) == 1:
             self._active_servers = min(self._active_servers + 1, MAX_SERVERS)
         elif int(action) == 2:
             self._active_servers = max(self._active_servers - 1, MIN_SERVERS)
-        # 0 → hold; also catches any unexpected value gracefully
 
         self._step_count += 1
-
-        # ── Simulate ─────────────────────────────────────────────────────────
         traffic = self._generate_traffic(self._step_count)
         latency = self._calculate_latency(traffic, self._active_servers)
         reward  = self._calculate_reward(latency, self._active_servers)
 
         self._total_reward += float(reward)
-
         obs = self._make_obs(traffic, latency)
 
-        # ── Termination / truncation ──────────────────────────────────────────
-        terminated = False                              # no natural end
-        truncated  = self._step_count >= MAX_STEPS      # hard horizon
+        terminated = False
+        truncated  = self._step_count >= MAX_STEPS
 
-        # ── Info dict — keys required by Meta grader ─────────────────────────
-        is_success = (latency < 50.0)
         info = {
-            # Required by Meta/OpenEnv grader (Step 3 spec)
-            "is_success"     : bool(is_success),
+            "is_success"     : bool(latency < 50.0),
             "latency_ms"     : float(latency),
             "active_servers" : int(self._active_servers),
             "step_count"     : int(self._step_count),
-            # Supplementary diagnostics
             "traffic"        : float(traffic),
             "total_reward"   : float(self._total_reward),
         }
@@ -248,7 +196,6 @@ def safe_score(raw):
         return obs, float(safe_score(reward)), terminated, truncated, info
 
     def render(self):
-        """Text render for debugging."""
         print(
             f"[step={self._step_count:3d}] "
             f"servers={self._active_servers:2d} | "

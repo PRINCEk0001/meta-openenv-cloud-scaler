@@ -21,20 +21,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from models import EnvInfo, ResetResult, ScalerAction, ScalerObservation, StepResult, GraderRequest, GraderResponse, CodeReviewAction, CodeReviewObservation
 from server.environment import CloudAutoScalerEnvironment, CodeReviewEnvironment
 from server.tasks import grade_task
+from server.utils import safe_score
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", stream=sys.stderr)
 log = logging.getLogger("cloud-autoscaler")
 
-def safe_score(raw):
-    """Implement the strict (0.001, 0.999) safety clamp and 2dp formatting.
-    Ensures values like 0.0 or 1.0 are never returned.
-    """
-    try:
-        val = float(raw if raw is not None else 0.01)
-    except (ValueError, TypeError):
-        val = 0.01
-    clamped = max(0.01, min(0.99, val))
-    return f"{clamped:.2f}"
 
 _env_instance = None
 

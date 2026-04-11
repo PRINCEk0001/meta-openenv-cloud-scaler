@@ -9,6 +9,7 @@ from openai import OpenAI
 # Direct imports instead of network client
 from models import ScalerAction
 from server.environment import CloudAutoScalerEnvironment
+from server.utils import safe_score, clamp_reward
 
 # Load config from env or set defaults
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.groq.com/openai/v1")
@@ -20,10 +21,6 @@ openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN or "dummy-token")
 # Prompt engineering to get valid JSON out of the LLM
 SYS_PROMPT = "You're a cloud infra bot. Output ONLY a valid JSON object with key 'action' and value 0, 1, or 2. No markdown blocks."
 
-def clamp_reward(r, eps=0.01):
-    """Implement user requested clamp returning float."""
-    return max(eps, min(1.0 - eps, float(r)))
-
 def get_scaling_action(obs, last_action: int = 0) -> ScalerAction:
     """
     Implements a heuristic-driven policy as recommended in the reliability plan.
@@ -31,9 +28,15 @@ def get_scaling_action(obs, last_action: int = 0) -> ScalerAction:
     - under-utilized (<55%) and safe server count -> scale down
     - enforces a cooldown to prevent oscillation (no 1->2 or 2->1 in consecutive steps)
     """
-    servers = getattr(obs, "active_servers", 10)
-    latency = getattr(obs, "latency_ms", 10.0)
-    util = getattr(obs, "utilization", 0.5)
+    # obs can be ScalerObservation or np.ndarray (for backward compat)
+    if isinstance(obs, (list, tuple)) or hasattr(obs, "shape"): # numpy array
+        traffic, servers, latency = obs[0], obs[1], obs[2]
+        capacity = servers * 25.0 # SERVER_CAPACITY
+        util = traffic / capacity if capacity > 0 else 0.5
+    else: # Pydantic model
+        servers = getattr(obs, "active_servers", 10)
+        latency = getattr(obs, "latency_ms", 10.0)
+        util = getattr(obs, "utilization", 0.5)
 
     # 1. Heuristic logic
     if util > 0.85 or latency > 50.0:
@@ -51,7 +54,24 @@ def get_scaling_action(obs, last_action: int = 0) -> ScalerAction:
 
     return ScalerAction(action=action_val)
 
-# ... [Timeout class unchanged] ...
+class Timeout(threading.Thread):
+    """
+    Enforces a hard execution limit. If the script takes longer than
+    the specified seconds, it will forcefully terminate.
+    """
+    def __init__(self, seconds):
+        super().__init__()
+        self.seconds = seconds
+        self.daemon = True
+        self._cancel = threading.Event()
+
+    def run(self):
+        if not self._cancel.wait(self.seconds):
+            print(f"[TIMEOUT] Script exceeded {self.seconds}s limit. Terminating.", file=sys.stderr)
+            os._exit(1)
+
+    def cancel(self):
+        self._cancel.set()
 
 def run_task(env: CloudAutoScalerEnvironment, task_name: str):
     """Executes the standard inference loop directly against the environment class."""
@@ -77,7 +97,7 @@ def run_task(env: CloudAutoScalerEnvironment, task_name: str):
             try:
                 # Direct step
                 res_obs, res_reward, done, info = env.step(action_obj)
-                # Use clamp_reward to ensure (0,1) boundaries
+                # Use centralized clamp_reward
                 reward = clamp_reward(res_reward)
                 obs = res_obs
                 last_action = action_val

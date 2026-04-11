@@ -4,17 +4,8 @@ Implements multipliers, consistency bonuses, and ultra-strict clamping.
 """
 import math
 from typing import List
+from server.utils import safe_score
 
-def safe_score(raw):
-    """Implement the strict (0.01, 0.99) safety clamp and 2dp formatting.
-    Ensures values like 0.0 or 1.0 are never returned.
-    """
-    try:
-        val = float(raw if raw is not None else 0.01)
-    except (ValueError, TypeError):
-        val = 0.01
-    clamped = max(0.01, min(0.99, val))
-    return f"{clamped:.2f}"
 
 def clamp_ultra_strict(score: float) -> float:
     """Implement the [0.01, 0.99] ultra-strict safety clamp."""
