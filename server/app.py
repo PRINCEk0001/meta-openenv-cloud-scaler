@@ -17,8 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from pydantic import BaseModel
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from models import EnvInfo, ResetResult, ScalerAction, ScalerObservation, StepResult, GraderRequest, GraderResponse, CodeReviewAction, CodeReviewObservation
+from .models import EnvInfo, ResetResult, ScalerAction, ScalerObservation, StepResult, GraderRequest, GraderResponse, CodeReviewAction, CodeReviewObservation
 from server.environment import CloudAutoScalerEnvironment, CodeReviewEnvironment
 from server.tasks import grade_task
 from server.utils import safe_score

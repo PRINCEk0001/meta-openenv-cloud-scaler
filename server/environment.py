@@ -18,8 +18,7 @@ except ImportError:
     # fallback if not installed yet
     _BaseEnvironment = BaseModel
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from models import ScalerObservation, ScalerAction, ScalerState, CodeReviewObservation, CodeReviewAction, CodeReviewState
+from .models import ScalerObservation, ScalerAction, ScalerState, CodeReviewObservation, CodeReviewAction, CodeReviewState
 
 
 MAX_STEPS = 50

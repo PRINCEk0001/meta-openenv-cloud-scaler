@@ -5,10 +5,15 @@ import threading
 import math
 from typing import List, Union, Any
 
+# Ensure project root is in path for absolute imports
+_root = os.path.dirname(os.path.abspath(__file__))
+if _root not in sys.path:
+    sys.path.insert(0, _root)
+
 from openai import OpenAI
 
 # Direct imports from the submission structure
-from models import ScalerAction, CodeReviewAction
+from server.models import ScalerAction, CodeReviewAction
 from server.environment import CloudAutoScalerEnvironment, CodeReviewEnvironment
 from server.utils import safe_score, clamp_reward
 
