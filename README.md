@@ -1,99 +1,110 @@
 ---
-title: Cloud AutoScaler & Security Auditor
-emoji: ☁️
-colorFrom: blue
-colorTo: purple
+title: Anigrevity Agentic Suite
+emoji: 🤖
+colorFrom: cyan
+colorTo: black
 sdk: docker
-pinned: false
+pinned: true
 ---
 
-# ☁️ Anigrevity: Multi-Agent OpenEnv Suite
+# 🤖 Anigrevity: Multi-Agent OpenEnv Suite
+### High-Fidelity RL & LLM Evaluation Framework for the Meta OpenEnv Track
 
-[![Gymnasium Compliant](https://img.shields.io/badge/Gymnasium-v0.29.1-blue.svg)](https://gymnasium.farama.org/)
-[![FastAPI Server](https://img.shields.io/badge/FastAPI-0.110.0-teal.svg)](https://fastapi.tiangolo.com)
-[![Meta OpenEnv](https://img.shields.io/badge/Track-Meta_OpenEnv-purple.svg)]()
+[![Gymnasium](https://img.shields.io/badge/Gymnasium-v0.29.1-blue.svg)](https://gymnasium.farama.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-teal.svg)](https://fastapi.tiangolo.com)
+[![Status](https://img.shields.io/badge/Status-Phase_2_Compliance-brightgreen.svg)]()
+[![License](https://img.shields.io/badge/License-MIT-gray.svg)]()
 
-Welcome to the **Anigrevity OpenEnv Suite**, a collection of three high-fidelity simulation environments designed for the **Meta OpenEnv Track** hackathon. 
-
-This repository implements a production-ready, agent-agnostic infrastructure for evaluating LLM-based autonomous controllers across infrastructure management, security auditing, and failure diagnosis.
-
----
-
-## 🎭 The Anigrevity Persona
-
-All agents in this suite are integrated with the **Anigrevity** persona—a strict, goal-oriented autonomous controller designed for Zero-Shot and Few-Shot LLM evaluation.
-
-1.  **Cloud Infrastructure Controller (Scaler)**: Manages server fleets to balance 70% utilization with <50ms latency.
-2.  **Expert Security Auditor (Reviewer)**: Scans 5-step diffs for SQLi, XSS, and auth bypasses. Blocks vulnerabilities with `reject` actions.
-3.  **ML Failure Diagnosis (WDIF)**: Diagnoses training failures (e.g., vanishing gradients, dying ReLUs) through systematic log and config inspection.
+**Anigrevity** is a production-grade evaluation suite designed for the **Meta OpenEnv** hackathon. It provides a synchronized, multi-agent environment hub for benchmarking LLM-based autonomous controllers across infrastructure management, security auditing, and ML failure diagnosis.
 
 ---
 
-## 🏗️ Technical Architecture & Requirements
+## 🏗️ System Architecture
 
-### 💎 Strict Compliance (Phase 2 Hardened)
-This repository is optimized to pass the Meta OpenEnv automated validator with a **100% success rate** on boundary conditions:
-*   **Hardened Reward Range**: All rewards and final task scores are strictly clamped to the **(0.01, 0.99)** interval. Values like `0.0` or `1.0` are impossible, preventing evaluation "out of range" errors.
-*   **Standardized Logging**: Every episode produces a mandatory `[END]` log in the exact format required: `[END] task={task} score={final_score:.2f} steps={n}`.
-*   **LLM Proxy Integration**: Ready for the `HF_TOKEN` and `API_BASE_URL` injection, using the Groq-powered `llama-3.1-8b-instant` baseline.
+The suite is designed with a strict separation of concerns, ensuring that the frontend monitoring, backend simulation, and LLM inference loop remain decoupled and compliant.
+
+```mermaid
+graph TD
+    A[HF Spaces / User] --> B[Kinetic Console Frontend]
+    B --> C[FastAPI Gateway :7860]
+    C --> D[Environment Registry]
+    D --> E[Cloud AutoScaler]
+    D --> F[Code Reviewer]
+    D --> G[ML Diagnoser]
+    H[Inference Loop] --> C
+    H --> I[HF / Meta LLM Proxy]
+    I --> J[Groq llama-3.1-8b]
+```
+
+---
+
+## 💎 Compliance & Hardening (Phase 2)
+
+We have implemented rigorous boundary controls to meet 100% of the Meta OpenEnv automated validation requirements:
+
+*   **Fixed Reward Boundary**: All internal rewards and end-of-episode task scores are hard-clamped to the **(0.01, 0.99)** interval. This eliminates boundary-condition failures (`0.0` or `1.0`) seen in standard evaluations.
+*   **Synchronized Logging Protocol**: Standardized stdout logging for automated parsers:
+    *   `[START] task={name} env={suite} model={model}`
+    *   `[STEP] step={n} action={...} reward={r} done={b}`
+    *   `[END] task={name} score={s.2f} steps={n}`
+*   **LLM Proxy Isolation**: All actions are generated via the mandatory `API_BASE_URL` using authorized `HF_TOKEN` credentials.
 
 ---
 
 ## 📊 Environment Catalog
 
-### 1. Cloud AutoScaler (`autoscaling_easy/medium/hard`)
-Simulates a core dev-ops challenge: managing server farms in response to volatile web traffic.
-*   **Actions**: `0: Hold`, `1: Scale Up`, `2: Scale Down`.
-*   **Optimization**: Target 60-80% capacity utilization.
-*   **Episode Horizon**: 50 steps.
+### 1. Cloud AutoScaler (`autoscaling_hard`)
+Autonomous infrastructure management.
+- **Challenge**: Balance 70% cluster utilization against sub-50ms latency amidst random traffic spikes.
+- **Action Space**: `0: Hold`, `1: Scale Up`, `2: Scale Down`.
+- **Metrics**: Latency (ms), Cost (server-steps), Reliability.
 
-### 2. Code Review Auditor (`code_review_easy/medium/hard`)
-Evaluates security reasoning by presenting patches with potential vulnerabilities.
-*   **Actions**: `approve`, `reject`, `request_changes`, `comment`.
-*   **Episode Horizon**: 5 steps.
+### 2. Code Review Auditor (`code_review_hard`)
+Automated security reasoning.
+- **Challenge**: Scan multi-file PR diffs for SQLi, XSS, and broken access controls.
+- **Action Space**: `APPROVE`, `REJECT`, `CHANGES`, `COMMENT`.
+- **Precision**: High-confidence blocking of critical RCE vulnerabilities.
 
-### 3. Why Did It Fail (`whydiditfail_easy`)
-ML Diagnosis task requiring step-by-step investigation of training logs and configurations.
-*   **Actions**: `inspect_logs`, `inspect_config`, `inspect_gradients`, `submit_diagnosis`.
+### 3. ML Failure Diagnosis (`wdif_hard`)
+Deep-tier technical debugging.
+- **Challenge**: Investigate training logs to distinguish between exploding gradients, dying ReLUs, and underfitting.
+- **Flow**: Systematic inspection of logs, configs, and gradient norms.
 
-### 4. Kinetic Console Dashboard (`index.html`)
-A high-fidelity, pixel-perfect frontend for real-time monitoring.
-*   **Features**: Line charts for rewards, scrolling terminal logs, and clickable action controls.
-*   **Access**: Open `index.html` in any browser while the backend is running.
+---
+
+## 🎨 Kinetic Console Dashboard
+Included in the suite is a high-fidelity monitoring frontend (`index.html`).
+
+*   **Real-time Telemetry**: Chart.js integration for visual reward tracking.
+*   **System Terminal**: Multi-color log streaming for direct debugging.
+*   **Interactive Controls**: Manual override buttons for state-injection testing.
 
 ---
 
 ## 🚀 Deployment & Usage
 
-### 🎨 Kinetic Dashboard
-To view the real-time telemetry console:
-1.  Ensure the FastAPI server is running (`python -m server.app`).
-2.  Open **[index.html](file:///e:/Meta%20Ai/index.html)** in your browser.
-3.  The console will automatically sync with the backend at `localhost:7860`.
-
----
-
-## 🚀 Deployment & Usage
-
-### HF Spaces Standard
-The environment serves a FastAPI wrapper on port `7860`.
+### Local Containerization
 ```bash
-docker build -t meta-openenv-anigrevity .
-docker run -p 7860:7860 meta-openenv-anigrevity
+# Build and serve via Docker
+docker build -t anigrevity-suite .
+docker run -p 7860:7860 anigrevity-suite
 ```
 
 ### Integrated Inference
-To run a full evaluation:
+To execute a compliant evaluation loop:
 ```bash
-set HF_TOKEN=your_token_here
+# Set credentials
+set HF_TOKEN=your_huggingface_token
+
+# Run inference
 python inference.py
 ```
 
 ### Pre-Deployment Verification
 ```bash
+# Run the Meta OpenEnv pre-check
 python main.py
 ```
 
 ---
-*Developed for the Meta LLM OpenEnv Hackathon* ☁️
-Meta LLM OpenEnv Hackathon* ☁️
+*Developed for the Meta LLM OpenEnv Hackathon 2026* ☁️
