@@ -133,9 +133,11 @@
             gap: 12px;
             color: var(--text-muted);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
             border-left: 3px solid transparent;
         }
+
+        .nav-item:active { transform: scale(0.96); }
 
         .nav-item:hover {
             background-color: #151515;
@@ -171,15 +173,16 @@
             font-family: var(--font-mono);
             cursor: pointer;
             box-shadow: var(--glow-teal);
-            transition: transform 0.1s;
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .run-btn:hover {
             filter: brightness(1.1);
+            transform: translateY(-2px);
         }
 
         .run-btn:active {
-            transform: scale(0.98);
+            transform: scale(0.94);
         }
 
         /* --- ADVANCED FEATURES --- */
@@ -413,7 +416,7 @@
             font-family: var(--font-mono);
             font-size: 11px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .btn-small.primary {
@@ -422,7 +425,8 @@
             border-color: var(--accent-teal);
         }
 
-        .btn-small:hover { opacity: 0.8; }
+        .btn-small:hover { transform: translateY(-1px); background: #222; }
+        .btn-small:active { transform: scale(0.95); }
 
         .telemetry-body {
             display: grid;
@@ -669,12 +673,13 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-            transition: all 0.3s;
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
             cursor: pointer;
             position: relative;
         }
 
-        .env-card:hover { border-color: var(--accent-teal); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0, 255, 209, 0.05); }
+        .env-card:hover { border-color: var(--accent-teal); transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0, 255, 209, 0.1); }
+        .env-card:active { transform: scale(0.98) translateY(-2px); }
         .env-card.active { border-color: var(--accent-teal); background-color: rgba(0, 255, 209, 0.02); }
 
         .env-header { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -690,17 +695,19 @@
         .action-row.three { grid-template-columns: repeat(3, 1fr); }
 
         .btn-action {
-            background: #1a1a1a;
-            border: 1px solid #333;
+            flex-grow: 1;
+            background: transparent;
+            border: 1px solid var(--border-color);
             color: var(--text-muted);
-            padding: 8px;
-            font-size: 9px;
+            padding: 10px;
+            font-size: 10px;
             font-family: var(--font-mono);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .btn-action:hover { border-color: var(--accent-teal); color: var(--text-main); }
+        .btn-action:active { transform: scale(0.92); background: rgba(0, 255, 209, 0.05); }
 
         .reward-meter { margin-top: 10px; }
         .meter-info { display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 6px; }
@@ -728,6 +735,73 @@
         ::-webkit-scrollbar-track { background: var(--bg-color); }
         ::-webkit-scrollbar-thumb { background: #333; }
         ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+        /* --- DOCS VIEW STYLES --- */
+        #docsView { display: none; flex-direction: column; gap: 30px; animation: fadeIn 0.5s; }
+        .docs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; align-items: start; }
+        .endpoint-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.4s var(--oneui-curve);
+            cursor: pointer;
+        }
+        .endpoint-card:hover { border-color: var(--accent-teal); transform: translateY(-4px); }
+        .endpoint-card:active { transform: scale(0.98); }
+        
+        .method-badge {
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-right: 10px;
+            display: inline-block;
+        }
+        .method-get { background: rgba(0, 255, 209, 0.1); color: var(--accent-teal); border: 1px solid var(--accent-teal); }
+        .method-post { background: var(--accent-teal); color: #000; }
+        
+        .endpoint-path { font-family: var(--font-mono); font-size: 13px; color: var(--text-main); }
+        .endpoint-desc { font-size: 11px; color: var(--text-muted); margin-top: 10px; line-height: 1.5; }
+        
+        .schema-box {
+            margin-top: 8px;
+            padding: 8px 0 8px 16px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            color: #888;
+            border-left: 2px solid #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .docs-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s var(--oneui-curve);
+        }
+        .endpoint-card.expanded .docs-details {
+            max-height: 2000px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #1a1a1a;
+        }
+
+        .details-section { margin-bottom: 20px; }
+        .details-section h5 { font-size: 9px; color: var(--accent-teal); margin-bottom: 8px; letter-spacing: 1px; opacity: 0.6; }
+        
+        .field-row { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding: 4px 0; }
+        .field-name { font-weight: bold; color: #aaa; flex-shrink: 1; word-break: break-all; }
+        .field-type { color: #555; font-size: 9px; flex-shrink: 0; text-align: right; }
+        .type-int { color: var(--accent-teal); opacity: 0.8; }
+        .type-string { color: var(--accent-amber); opacity: 0.8; }
+        .type-bool { color: #66ccff; opacity: 0.8; }
+        .type-obj { color: #888; }
+        
+        .param-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        .param-table th { text-align: left; font-size: 8px; color: #444; padding: 6px; border-bottom: 1px solid #1a1a1a; }
+        .param-table td { font-size: 10px; padding: 6px; border-bottom: 1px solid #151515; }
 
     </style>
 </head>
@@ -802,7 +876,7 @@
                     API STATUS: <span id="statusText">DETECTING...</span>
                 </div>
                 <a href="#" class="nav-link active">DASHBOARD</a>
-                <a href="/docs" target="_blank" class="nav-link">DOCUMENTATION</a>
+                <a href="#" id="mainDocsLink" class="nav-link">DOCUMENTATION</a>
                 <div class="nav-link" style="margin-left: 10px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.48m-8.48 0a6 6 0 0 1 0-8.48m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
                 </div>
@@ -810,7 +884,7 @@
         </header>
 
         <!-- MAIN CONTENT AREA -->
-        <div class="content">
+        <div class="content" id="dashboardView">
             
             <!-- METRIC ROW -->
             <div class="metric-row">
@@ -1067,6 +1141,20 @@
 
             <div style="height: 50px;"></div>
         </div>
+
+        <!-- THEMED DOCS VIEW -->
+        <div class="content" id="docsView" style="display: none; padding: 30px;">
+            <div class="card-header">
+                <div class="card-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-teal)" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                    API_CATALOG_EXPLORER
+                </div>
+                <div class="badge">OPENAPI_V3.1_CONNECTED</div>
+            </div>
+            <div class="docs-grid" id="docsGrid" style="margin-top: 20px;">
+                <!-- Content generated by app.initDocs() -->
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1090,6 +1178,7 @@
             currentEnv: 'scaler',
             cumulativeScore: 0,
             isOnline: false,
+            currentView: 'dashboard',
             
             // Overhaul State
             history: [],
@@ -1098,12 +1187,14 @@
             threatLevel: 0,
             radarValues: [70, 40, 90],
             radarChart: null,
+            docsInitialized: false,
 
             init() {
                 try {
                     this.initChart();
                     this.initNodes();
                     this.initRadar();
+                    this.initDocs();
                     this.attachEvents();
                     this.checkApiStatus();
                     this.bootSystem();
@@ -1250,6 +1341,14 @@
             },
 
             attachEvents() {
+                document.getElementById('navDocs').onclick = () => this.showView('docs');
+                document.getElementById('navDash').onclick = () => this.showView('dashboard');
+                
+                document.getElementById('mainDocsLink').onclick = (e) => {
+                    e.preventDefault();
+                    this.showView('docs');
+                };
+
                 document.getElementById('startBtn').onclick = () => this.startEpisode();
                 document.getElementById('sidebarRunBtn').onclick = () => this.startEpisode();
                 
@@ -1265,15 +1364,6 @@
                     this.callApi('/info', 'GET');
                 };
 
-                // Sidebar Navigation
-                document.getElementById('navDash').onclick = () => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    this.setActiveNav('navDash');
-                };
-                document.getElementById('navDocs').onclick = () => {
-                    window.open('/docs', '_blank');
-                    this.setActiveNav('navDocs');
-                };
                 document.getElementById('navPersona').onclick = () => {
                     document.querySelector('.info-card').scrollIntoView({ behavior: 'smooth' });
                     this.setActiveNav('navPersona');
@@ -1324,6 +1414,12 @@
                 const body = document.getElementById('termBody');
                 const cursorLine = body.querySelector('.log-line:last-child');
                 
+                // --- PROFESSIONAL AUDIT: BUFFER CAPPING ---
+                const lines = body.querySelectorAll('.log-line');
+                if (lines.length > 50) {
+                    lines[0].remove();
+                }
+
                 const line = document.createElement('div');
                 line.className = 'log-line';
                 line.innerHTML = `<span class="level ${level}">[${level.toUpperCase()}]</span> ${text}`;
@@ -1351,6 +1447,143 @@
                     this.addLog('warn', `CONN_ERROR: ${path}`);
                     return null;
                 }
+            },
+
+            showView(name) {
+                this.currentView = name;
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                document.querySelectorAll('.nav-link').forEach(i => i.classList.remove('active'));
+                
+                if (name === 'dashboard') {
+                    document.getElementById('dashboardView').style.display = 'flex';
+                    document.getElementById('docsView').style.display = 'none';
+                    document.getElementById('navDash').classList.add('active');
+                    document.querySelector('.nav-link:first-child').classList.add('active');
+                } else if (name === 'docs') {
+                    document.getElementById('dashboardView').style.display = 'none';
+                    document.getElementById('docsView').style.display = 'flex';
+                    document.getElementById('navDocs').classList.add('active');
+                    document.getElementById('mainDocsLink').classList.add('active');
+                }
+            },
+
+            async initDocs() {
+                // --- PROFESSIONAL AUDIT: IDEMPOTENCY CHECK ---
+                if (this.docsInitialized) return;
+                
+                try {
+                    const res = await fetch('/openapi.json');
+                    if (!res.ok) throw new Error("Spec not found");
+                    const openapi = await res.json();
+                    const grid = document.getElementById('docsGrid');
+                    if (!grid) return;
+                    grid.innerHTML = '';
+                    
+                    this.docsInitialized = true;
+                    this.addLog('info', 'API_DOCS: CATALOG_LOADED_SUCCESSFULLY');
+                    
+                    Object.keys(openapi.paths).forEach(path => {
+                        const methods = openapi.paths[path];
+                        Object.keys(methods).forEach(method => {
+                            const details = methods[method];
+                            const card = document.createElement('div');
+                            card.className = 'endpoint-card';
+                            card.onclick = (e) => {
+                                if (e.target.tagName !== 'BUTTON') card.classList.toggle('expanded');
+                            };
+                            
+                            // 1. Resolve Request Schema
+                            let requestHtml = '';
+                            if (details.requestBody) {
+                                let schema = details.requestBody.content['application/json'].schema;
+                                requestHtml = `<div class="details-section"><h5>REQUEST_BODY</h5>${this.renderObjectSchema(schema, openapi)}</div>`;
+                            }
+
+                            // 2. Resolve Parameters
+                            let paramsHtml = '';
+                            if (details.parameters && details.parameters.length > 0) {
+                                paramsHtml = `<div class="details-section"><h5>PARAMETERS</h5><div class="schema-box"><table class="param-table"><tr><th>NAME</th><th>TYPE</th><th>IN</th></tr>${details.parameters.map(p => `<tr><td>${p.name}</td><td class="field-type">${p.schema?.type || 'Any'}</td><td>${p.in}</td></tr>`).join('')}</table></div></div>`;
+                            }
+
+                            // 3. Resolve Responses
+                            let responsesHtml = '';
+                            if (details.responses) {
+                                responsesHtml = `<div class="details-section"><h5>RESPONSES</h5>${Object.keys(details.responses).map(code => {
+                                    const r = details.responses[code];
+                                    const s = r.content ? r.content['application/json']?.schema : null;
+                                    return `<div class="field-row"><span>[${code}] ${r.description}</span>${s ? '<span style="color:var(--accent-teal); cursor:help" title="Model details listed below">MODEL_LINK</span>' : ''}</div>${s ? this.renderObjectSchema(s, openapi) : ''}`;
+                                }).join('')}</div>`;
+                            }
+
+                            card.innerHTML = `
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div style="display:flex; align-items:center;">
+                                        <span class="method-badge method-${method}">${method.toUpperCase()}</span>
+                                        <span class="endpoint-path">${path}</span>
+                                    </div>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2" style="transition:0.3s"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </div>
+                                <div class="endpoint-desc">${details.summary || details.description || 'API endpoint definition for custom agentic actions.'}</div>
+                                <div class="docs-details">
+                                    ${paramsHtml}
+                                    ${requestHtml}
+                                    ${responsesHtml}
+                                </div>
+                            `;
+                            grid.appendChild(card);
+                        });
+                    });
+                } catch (e) {
+                    console.error("DocsV2 init failed", e);
+                }
+            },
+
+            resolveRef(ref, openapi) {
+                if (!ref) return null;
+                const path = ref.replace('#/', '').split('/');
+                let current = openapi;
+                for (const part of path) {
+                    current = current[part];
+                }
+                return current;
+            },
+
+            renderObjectSchema(schema, openapi, depth = 0) {
+                if (depth > 3) return `<span class="field-type">...Complex</span>`;
+                if (schema.$ref) schema = this.resolveRef(schema.$ref, openapi);
+                
+                if (schema.anyOf) {
+                    return `<div class="schema-box" style="border-left-color:var(--accent-amber)">${schema.anyOf.map(s => this.renderObjectSchema(s, openapi, depth + 1)).join('')}</div>`;
+                }
+
+                if (!schema.properties) {
+                    const typeName = schema.type || (schema.enum ? 'Enum' : 'Object');
+                    return `<span class="field-type">${typeName}</span>`;
+                }
+                
+                const props = Object.keys(schema.properties).map(key => {
+                    let p = schema.properties[key];
+                    if (p.$ref) p = this.resolveRef(p.$ref, openapi);
+                    
+                    let typeClass = 'type-string';
+                    let typeName = p.type || 'Object';
+                    
+                    if (p.type === 'integer') typeClass = 'type-int';
+                    else if (p.type === 'boolean') typeClass = 'type-bool';
+                    else if (!p.type && (p.properties || p.anyOf)) typeClass = 'type-obj';
+
+                    if (p.enum) typeName += ` [${p.enum.join(',')}]`;
+
+                    return `
+                        <div class="field-row">
+                            <span class="field-name">${key}</span>
+                            <span class="field-type ${typeClass}">${typeName.toUpperCase()}</span>
+                        </div>
+                        ${(p.properties || p.anyOf) ? this.renderObjectSchema(p, openapi, depth + 1) : ''}
+                    `;
+                }).join('');
+                
+                return `<div class="schema-box">${props}</div>`;
             },
 
             initNodes() {
@@ -1610,6 +1843,7 @@
                 }
 
                 // Feature 5: History Buffer (Full Snapshots)
+                if (this.history.length > 100) this.history.shift();
                 this.history.push({
                     rewardLine: [...this.chart.data.datasets[0].data],
                     scoreLine: [...this.chart.data.datasets[2].data],
