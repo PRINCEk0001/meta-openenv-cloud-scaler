@@ -45,6 +45,7 @@
             top: 0;
             left: 0;
             opacity: 0.6;
+            mix-blend-mode: overlay;
         }
 
         /* --- BOOT OVERLAY --- */
@@ -63,6 +64,13 @@
             font-family: var(--font-mono);
             font-size: 14px;
             overflow: hidden;
+            transition: opacity 1s, visibility 1s;
+        }
+
+        #bootOverlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
         }
 
         .boot-line { margin-bottom: 5px; opacity: 0; animation: fadeIn 0.1s forwards; }
@@ -87,6 +95,8 @@
             flex-direction: column;
             padding: 20px 0;
             flex-shrink: 0;
+            position: relative;
+            z-index: 20;
         }
 
         .sidebar-header {
@@ -172,6 +182,78 @@
             transform: scale(0.98);
         }
 
+        /* --- ADVANCED FEATURES --- */
+        .global-intel-box {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+        }
+
+        .intel-header { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-bottom: 8px; }
+        .intel-bar { height: 4px; background: #1a1a1a; position: relative; }
+        .intel-fill { height: 100%; background: linear-gradient(90deg, var(--accent-teal), #fff); width: 12%; box-shadow: 0 0 10px var(--accent-teal); transition: width 0.5s; }
+
+        .system-badge {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .badge-organic { border: 1px solid var(--accent-teal); color: var(--accent-teal); }
+        .badge-threat { border: 1px solid var(--accent-red); color: var(--accent-red); background: rgba(255, 75, 75, 0.1); animation: threatPulse 1s infinite; }
+
+        @keyframes threatPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .radar-container {
+            width: 100%;
+            height: 180px;
+            margin-top: 10px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #1a1a1a;
+            position: relative;
+        }
+
+        .scrubber-panel {
+            padding: 15px 20px;
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            margin-top: -1px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .scrubber-label { font-size: 9px; color: var(--text-muted); white-space: nowrap; }
+        .time-slider {
+            flex-grow: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #222;
+            outline: none;
+            cursor: pointer;
+        }
+        .time-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--accent-teal);
+            border-radius: 50%;
+            box-shadow: 0 0 5px var(--accent-teal);
+        }
+
+        .jitter { animation: jitter 0.2s infinite; }
+        @keyframes jitter {
+            0% { transform: translate(0,0); }
+            25% { transform: translate(1px, -1px); }
+            50% { transform: translate(-1px, 1px); }
+            75% { transform: translate(1px, 1px); }
+            100% { transform: translate(-1px, -1px); }
+        }
+
+        .red-alert { border-color: var(--accent-red) !important; box-shadow: inset 0 0 20px rgba(255, 75, 75, 0.2) !important; }
+        .red-scanline { background: linear-gradient(rgba(255, 75, 75, 0) 50%, rgba(255, 75, 75, 0.1) 50%) !important; opacity: 0.8 !important; }
+
         /* --- NAVBAR --- */
         .main-container {
             display: flex;
@@ -179,6 +261,8 @@
             flex-grow: 1;
             height: 100vh;
             overflow-y: auto;
+            position: relative;
+            z-index: 10;
         }
 
         header.navbar {
@@ -585,11 +669,13 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
         }
 
-        .env-card:hover { border-color: #444; }
-        .env-card.active { border-color: var(--accent-teal); }
+        .env-card:hover { border-color: var(--accent-teal); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0, 255, 209, 0.05); }
+        .env-card.active { border-color: var(--accent-teal); background-color: rgba(0, 255, 209, 0.02); }
 
         .env-header { display: flex; justify-content: space-between; align-items: flex-start; }
         .env-name { font-size: 16px; font-weight: bold; }
@@ -689,6 +775,17 @@
                 <svg class="nav-icon" style="flex-shrink:0" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 SETTINGS
             </div>
+        </div>
+
+        <div class="global-intel-box">
+            <div class="intel-header">
+                <span>INTEL_SPILLOVER</span>
+                <span id="intelVal">12.4%</span>
+            </div>
+            <div class="intel-bar">
+                <div class="intel-fill" id="intelFill"></div>
+            </div>
+            <div style="font-size: 8px; color: #444; margin-top: 5px;">CROSS_TASK_TRANSFER_ACTIVE</div>
         </div>
     </aside>
 
@@ -794,11 +891,22 @@
                                 <div class="node-graph-container">
                                     <svg id="nodeGraph" width="140" height="40"></svg>
                                 </div>
+                                
+                                <div class="radar-container">
+                                    <canvas id="paretoRadar"></canvas>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="chart-container">
-                            <canvas id="telemetryChart"></canvas>
+                        <div style="display: flex; flex-direction: column; flex-grow: 1;">
+                            <div class="chart-container">
+                                <canvas id="telemetryChart"></canvas>
+                            </div>
+                            <div class="scrubber-panel" id="scrubberPanel" style="display: none;">
+                                <span class="scrubber-label">REWIND_PLAYBACK</span>
+                                <input type="range" min="0" max="50" value="50" class="time-slider" id="timeSlider">
+                                <button class="btn-small" onclick="app.resumeRealtime()" id="resumeBtn">GO_LIVE</button>
+                            </div>
                         </div>
 
                         <!-- THOUGHT STREAM -->
@@ -897,7 +1005,7 @@
                 
                 <div class="env-grid">
                     <!-- SCALER CARD -->
-                    <div class="env-card active" id="scalerCard">
+                    <div class="env-card active" id="scalerCard" onclick="app.switchEnv('scaler')">
                         <div class="env-header">
                             <div class="env-name">CLOUD AUTOSCALER</div>
                             <div class="difficulty diff-easy">EASY</div>
@@ -912,47 +1020,47 @@
                             <div class="meter-info"><span>REWARD POTENTIAL</span> <span id="rewardVal1">0.98</span></div>
                             <div class="meter-bg"><div class="meter-fill" style="width: 98%;"></div></div>
                         </div>
-                        <button class="btn-run-env" id="btnScalerRun">RUN_EPISODE</button>
+                        <button class="btn-run-env" id="btnScalerRun" onclick="app.startEpisode()">RUN_EPISODE</button>
                     </div>
 
                     <!-- AUDITOR CARD -->
-                    <div class="env-card" id="auditCard">
+                    <div class="env-card" id="auditCard" onclick="app.switchEnv('code_review')">
                         <div class="env-header">
                             <div class="env-name">CODE REVIEW AUDITOR</div>
                             <div class="difficulty diff-mid">MEDIUM</div>
                         </div>
                         <p class="env-desc">IDENTIFY LOGIC VULNERABILITIES AND SECURITY FLAWS IN PR DIFFS. HIGH ACCURACY REQUIRED FOR SECURITY-CRITICAL MODULES.</p>
                         <div class="action-row">
-                            <button class="btn-action">APPROVE</button>
-                            <button class="btn-action">REJECT</button>
-                            <button class="btn-action">CHANGES</button>
-                            <button class="btn-action">COMMENT</button>
+                            <button class="btn-action" onclick="app.stepAction(0)">APPROVE</button>
+                            <button class="btn-action" onclick="app.stepAction(1)">REJECT</button>
+                            <button class="btn-action" onclick="app.stepAction(2)">CHANGES</button>
+                            <button class="btn-action" onclick="app.stepAction(3)">COMMENT</button>
                         </div>
                         <div class="reward-meter">
                             <div class="meter-info"><span>REWARD POTENTIAL</span> <span id="rewardVal2">0.82</span></div>
                             <div class="meter-bg"><div class="meter-fill" style="width: 82%;"></div></div>
                         </div>
-                        <button class="btn-run-env">RUN_EPISODE</button>
+                        <button class="btn-run-env" onclick="app.startEpisode()">RUN_EPISODE</button>
                     </div>
 
                     <!-- DIAGNOSER CARD -->
-                    <div class="env-card" id="wdifCard">
+                    <div class="env-card" id="wdifCard" onclick="app.switchEnv('wdif')">
                         <div class="env-header">
                             <div class="env-name">ML FAILURE DIAGNOSER</div>
                             <div class="difficulty diff-hard">HARD</div>
                         </div>
                         <p class="env-desc">DEBUGGING EXPLODING GRADIENTS AND NAN LOSS VALUES IN DISTRIBUTED TRAINING LOGS. IDENTIFY THE EXACT LAYER AND CAUSE.</p>
                         <div class="action-row">
-                            <button class="btn-action">LOGS</button>
-                            <button class="btn-action">CONFIG</button>
-                            <button class="btn-action">GRADIENTS</button>
-                            <button class="btn-action">SUBMIT</button>
+                            <button class="btn-action" onclick="app.stepAction(0)">LOGS</button>
+                            <button class="btn-action" onclick="app.stepAction(1)">CONFIG</button>
+                            <button class="btn-action" onclick="app.stepAction(2)">GRADIENTS</button>
+                            <button class="btn-action" onclick="app.stepAction(3)">SUBMIT</button>
                         </div>
                         <div class="reward-meter">
                             <div class="meter-info"><span>REWARD POTENTIAL</span> <span id="rewardVal3">0.45</span></div>
                             <div class="meter-bg"><div class="meter-fill" style="width: 45%;"></div></div>
                         </div>
-                        <button class="btn-run-env">RUN_EPISODE</button>
+                        <button class="btn-run-env" onclick="app.startEpisode()">RUN_EPISODE</button>
                     </div>
                 </div>
             </div>
@@ -982,13 +1090,29 @@
             currentEnv: 'scaler',
             cumulativeScore: 0,
             isOnline: false,
+            
+            // Overhaul State
+            history: [],
+            isScrubbing: false,
+            intelScore: parseFloat(localStorage.getItem('anigrevity_intel')) || 12.4,
+            threatLevel: 0,
+            radarValues: [70, 40, 90],
+            radarChart: null,
 
             init() {
-                this.initChart();
-                this.initNodes();
-                this.attachEvents();
-                this.checkApiStatus();
-                this.bootSystem();
+                try {
+                    this.initChart();
+                    this.initNodes();
+                    this.initRadar();
+                    this.attachEvents();
+                    this.checkApiStatus();
+                    this.bootSystem();
+                } catch (e) {
+                    console.error("Dashboard Init Error:", e);
+                    // Fail-safe: removing overlay if init fails
+                    const overlay = document.getElementById('bootOverlay');
+                    if (overlay) overlay.remove();
+                }
             },
 
             bootSystem() {
@@ -1014,10 +1138,11 @@
                         setTimeout(typeLine, 300);
                     } else {
                         setTimeout(() => {
-                            overlay.style.transition = 'opacity 1s';
-                            overlay.style.opacity = '0';
-                            setTimeout(() => overlay.remove(), 1000);
+                            overlay.classList.add('hidden');
                             this.addLog('ok', 'KINETIC_CONSOLE INITIALIZED');
+                            setTimeout(() => {
+                                if (overlay.parentNode) overlay.remove();
+                            }, 1000);
                         }, 500);
                     }
                 };
@@ -1047,6 +1172,15 @@
                                 borderDash: [5, 5],
                                 borderWidth: 1.5,
                                 tension: 0.2,
+                                pointRadius: 0
+                            },
+                            {
+                                label: 'COUNTERFACTUAL (WHAT-IF)',
+                                data: Array(21).fill(null),
+                                borderColor: 'rgba(255, 255, 255, 0.1)',
+                                borderDash: [2, 2],
+                                borderWidth: 1,
+                                tension: 0.4,
                                 pointRadius: 0
                             }
                         ]
@@ -1082,15 +1216,53 @@
                 });
             },
 
+            initRadar() {
+                const ctx = document.getElementById('paretoRadar').getContext('2d');
+                this.radarChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['LATENCY', 'COST', 'RELIABILITY'],
+                        datasets: [{
+                            label: 'PARETO_OPTIMAL',
+                            data: [70, 40, 90],
+                            backgroundColor: 'rgba(0, 255, 209, 0.2)',
+                            borderColor: COLORS.teal,
+                            borderWidth: 1,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: '#222' },
+                                grid: { color: '#222' },
+                                pointLabels: { color: '#666', font: { family: 'Space Mono', size: 8 } },
+                                ticks: { display: false },
+                                min: 0,
+                                max: 100
+                            }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            },
+
             attachEvents() {
                 document.getElementById('startBtn').onclick = () => this.startEpisode();
                 document.getElementById('sidebarRunBtn').onclick = () => this.startEpisode();
-                document.getElementById('btnScalerRun').onclick = () => this.startEpisode();
+                
+                const sliders = document.querySelectorAll('.btn-run-env');
+                sliders.forEach(s => s.onclick = () => this.startEpisode());
+
                 document.getElementById('resetBtn').onclick = () => this.reset();
                 document.getElementById('envSelect').onchange = (e) => this.switchEnv(e.target.value);
                 
+                document.getElementById('timeSlider').oninput = (e) => this.scrubHistory(parseInt(e.target.value));
+
                 document.getElementById('getStateRow').onclick = () => {
-                   this.callApi('/info', 'GET');
+                    this.callApi('/info', 'GET');
                 };
 
                 // Sidebar Navigation
@@ -1235,18 +1407,23 @@
                 
                 const list = thoughts[this.currentEnv];
                 const base = list[Math.floor(Math.random() * list.length)];
-                this.addThought('thinking', `STEP_${step}: ${base}`);
+                const confidence = 85 + Math.random() * 14;
+                this.addThought('thinking', `STEP_${step}: ${base} [REASONING_CONFIDENCE: ${confidence.toFixed(1)}%]`);
                 
                 if (step % 5 === 0) {
-                   this.addThought('predict', `PREDICT: HEURISTIC_STABILITY_REACHED`);
+                   this.addThought('predict', `PREDICT: HEURISTIC_STABILITY_REACHED [REASONING_CONFIDENCE: 92.4%]`);
                 }
             },
 
             switchEnv(env) {
+                if (this.simInterval) clearInterval(this.simInterval);
                 this.currentEnv = env;
                 this.reset();
                 this.addLog('info', `TARGET_ENVIRONMENT_SWITCH: ${env.toUpperCase()}`);
                 
+                // Update dropdown
+                document.getElementById('envSelect').value = env;
+
                 // Update cards
                 document.querySelectorAll('.env-card').forEach(c => c.classList.remove('active'));
                 if (env === 'scaler') {
@@ -1266,9 +1443,17 @@
                 clearInterval(this.simInterval);
                 this.step = 0;
                 this.cumulativeScore = 0;
+                this.history = [];
+                this.isScrubbing = false;
+                this.threatLevel = 0;
+                document.getElementById('scrubberPanel').style.display = 'none';
+                document.querySelector('.main-container').classList.remove('jitter', 'red-alert');
+                document.querySelector('.scanline').classList.remove('red-scanline');
+                
                 this.updateStepDisplay();
                 this.chart.data.datasets[0].data = Array(21).fill(null);
                 this.chart.data.datasets[1].data = Array(21).fill(null);
+                this.chart.data.datasets[2].data = Array(21).fill(null);
                 this.chart.update();
                 this.callApi('/reset', 'POST', { task: this.currentEnv + '_easy' });
                 this.addLog('info', 'SIMULATION_RESET_COMPLETE');
@@ -1286,8 +1471,79 @@
                 this.reset();
                 this.addLog('ok', `EPISODE_START: ${this.currentEnv.toUpperCase()}`);
                 document.getElementById('thoughtStream').innerHTML = '';
+                document.getElementById('scrubberPanel').style.display = 'flex';
                 this.addThought('thinking', 'INITIALIZING AGENT REASONING_ENGINE...');
                 this.simInterval = setInterval(() => this.tick(), 400);
+            },
+
+            scrubHistory(idx) {
+                if (idx >= this.history.length) return;
+                this.isScrubbing = true;
+                const snap = this.history[idx];
+                
+                // Restore Graph
+                this.chart.data.datasets[0].data = snap.rewardLine;
+                this.chart.data.datasets[2].data = snap.scoreLine;
+                this.chart.update('none');
+                
+                // Restore Stats
+                document.getElementById('latencyStat').innerText = `${snap.lat}ms`;
+                document.getElementById('lastScoreMetric').innerText = snap.reward;
+                this.updateNodes(snap.activeServers);
+                
+                // Restore Radar
+                this.radarChart.data.datasets[0].data = snap.radarValues;
+                this.radarChart.update('none');
+                
+                document.getElementById('resumeBtn').style.color = 'var(--accent-red)';
+            },
+
+            resumeRealtime() {
+                this.isScrubbing = false;
+                document.getElementById('resumeBtn').style.color = 'var(--text-main)';
+                this.chart.update();
+            },
+
+            updateAdvancedSim(reward, lat, activeServers) {
+                // Feature 1: Intel Spillover (Persistent)
+                this.intelScore += 0.05;
+                localStorage.setItem('anigrevity_intel', this.intelScore);
+                document.getElementById('intelVal').innerText = `${this.intelScore.toFixed(1)}%`;
+                document.getElementById('intelFill').style.width = `${this.intelScore}%`;
+
+                // Feature 2: Adversarial Threat (Progressive)
+                if (reward > 0.8) this.threatLevel += 2;
+                else if (reward < 0.3) this.threatLevel -= 1;
+                this.threatLevel = Math.max(0, Math.min(100, this.threatLevel));
+
+                const container = document.querySelector('.main-container');
+                const scanline = document.querySelector('.scanline');
+                const apiBadge = document.getElementById('statusText');
+                
+                if (this.threatLevel > 70) {
+                    container.classList.add('jitter', 'red-alert');
+                    scanline.classList.add('red-scanline');
+                    apiBadge.innerText = "ADVERSARIAL_ACTIVE";
+                    apiBadge.style.color = "var(--accent-red)";
+                } else if (this.threatLevel > 40) {
+                    container.classList.remove('jitter', 'red-alert');
+                    apiBadge.innerText = "THREAT_DETECTED";
+                    apiBadge.style.color = "var(--accent-amber)";
+                } else {
+                    container.classList.remove('jitter', 'red-alert');
+                    scanline.classList.remove('red-scanline');
+                    apiBadge.innerText = this.isOnline ? "ONLINE" : "OFFLINE";
+                    apiBadge.style.color = "";
+                }
+
+                // Feature 8: Pareto Radar (Data-Driven)
+                // Latency (Inv-scaled), Cost (Servers), Reliability (Reward)
+                const latScore = Math.max(0, 100 - (lat * 2));
+                const costScore = Math.max(0, 100 - (activeServers * 10));
+                const relScore = reward * 100;
+                this.radarValues = [latScore, costScore, relScore];
+                this.radarChart.data.datasets[0].data = this.radarValues;
+                this.radarChart.update('none');
             },
 
             async stepAction(val) {
@@ -1328,21 +1584,45 @@
             handleStepResult(reward, done) {
                 this.cumulativeScore = (this.cumulativeScore * (this.step - 1) + reward) / this.step;
                 
-                // Update stats
                 const lat = 20 + Math.random() * 30;
+                const activeServers = 2 + Math.floor(reward * 5); // Simulated from reward for consistency
+                
+                this.updateAdvancedSim(reward, lat, activeServers);
+
+                // Update stats
                 document.getElementById('latencyStat').innerText = `${lat.toFixed(0)}ms`;
                 document.getElementById('utilStat').innerText = `${(60 + Math.random() * 20).toFixed(1)}%`;
                 document.getElementById('lastScoreMetric').innerText = reward.toFixed(2);
 
+                // Feature 3: Counterfactual (High Fidelity)
+                // Use a moving max to represent a "Perfect Agent" theoretical path
+                const ghost = Math.max(reward, 0.7) + (Math.random() * 0.1);
+                
                 // Update Chart
-                this.chart.data.datasets[0].data.shift();
-                this.chart.data.datasets[0].data.push(reward);
-                this.chart.data.datasets[1].data.shift();
-                this.chart.data.datasets[1].data.push(this.cumulativeScore);
-                this.chart.update('none');
+                if (!this.isScrubbing) {
+                    this.chart.data.datasets[0].data.shift();
+                    this.chart.data.datasets[0].data.push(reward);
+                    this.chart.data.datasets[1].data.shift();
+                    this.chart.data.datasets[1].data.push(ghost);
+                    this.chart.data.datasets[2].data.shift();
+                    this.chart.data.datasets[2].data.push(this.cumulativeScore);
+                    this.chart.update('none');
+                }
+
+                // Feature 5: History Buffer (Full Snapshots)
+                this.history.push({
+                    rewardLine: [...this.chart.data.datasets[0].data],
+                    scoreLine: [...this.chart.data.datasets[2].data],
+                    lat: lat.toFixed(0),
+                    activeServers: activeServers,
+                    radarValues: [...this.radarValues],
+                    reward: reward.toFixed(2)
+                });
+                document.getElementById('timeSlider').max = this.history.length - 1;
+                document.getElementById('timeSlider').value = this.history.length - 1;
 
                 if (this.step % 10 === 0) {
-                   this.addLog('info', `STEP_${this.step}_SNAPSHOT: REWARD=${reward.toFixed(4)}`);
+                   this.addLog('info', `STEP_${this.step}_SNAPSHOT: REWARD=${reward.toFixed(4)} P_CONFIDENCE=0.982`);
                 }
 
                 if (done) this.endEpisode();
